@@ -13,6 +13,10 @@ totalPrice = itemPrice (itemsToBuy - freeItemsCanBuy)
 totalPrice = itemPrice (itemsToBuy - (numberFreeForAll - numberMinted))
 
 
+totalPrice =  itemPrice * itemsToBuy - itemPrice * (numberFreeForAll - numberMinted))
+totalPrice =  itemPrice * itemsToBuy - itemPrice * numberFreeForAll + itemPrice * numberMinted
+totalPrice + itemPrice * numberFreeForAll =  itemPrice * itemsToBuy + itemPrice * numberMinted
+
 
 totDisc = freeItemsCanBuy-mintedQty * itemsToBuy
 price = itemsToBuy * itemPrice
