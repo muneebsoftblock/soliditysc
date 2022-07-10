@@ -28,10 +28,18 @@ contract MoonHedgehogSale is ERC721A("MoonHedgehog", "MH"), Ownable, ERC721AQuer
 
     string hedgehogMetadataURI;
 
-    function buyHedgehog(uint256 _hedgehogQty) external payable saleActive(saleActiveTime) callerIsUser mintLimit(_hedgehogQty, maxHedgehogPerWallet) priceAvailableFirstNftFree(_hedgehogQty) hedgehogAvailable(_HedgehogQty) {
+    constructor(){
+        autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
+        autoApproveMarketplace(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
+        autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
+        autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
+        autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
+    }
+
+    function buyHedgehog(uint256 _hedgehogQty) external payable saleActive(saleActiveTime) callerIsUser mintLimit(_hedgehogQty, maxHedgehogPerWallet) priceAvailableFirstNftFree(_hedgehogQty) hedgehogAvailable(_hedgehogQty) {
         require(_totalMinted() >= freeHedgehog, "Get your MoonHedgehog for free");
 
-        _mint(msg.sender, _HedgehogQty);
+        _mint(msg.sender, _hedgehogQty);
     }
 
     function buyHedgehogFree(uint256 _hedgehogQty) external saleActive(freeSaleActiveTime) callerIsUser mintLimit(_hedgehogQty, freeMaxHedgehogPerWallet) hedgehogAvailable(_hedgehogQty) {
@@ -94,7 +102,7 @@ contract MoonHedgehogSale is ERC721A("MoonHedgehog", "MH"), Ownable, ERC721AQuer
     }
 
     modifier mintLimit(uint256 _hedgehogQty, uint256 _maxHedgehogPerWallet) {
-        require(_numberMinted(msg.sender) + _HedgehogQty <= _maxHedgehogPerWallet, "MoonHedgehog max x wallet exceeded");
+        require(_numberMinted(msg.sender) + _hedgehogQty <= _maxHedgehogPerWallet, "MoonHedgehog max x wallet exceeded");
         _;
     }
 
@@ -132,9 +140,8 @@ contract MoonHedgehogSale is ERC721A("MoonHedgehog", "MH"), Ownable, ERC721AQuer
     function setRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
-}
 
-contract HedgehogApprovesMarketplaces is MoonHedgehogSale {
+    // Hedgehog Auto Approves Marketplaces
     mapping(address => bool) private allowed;
 
     function autoApproveMarketplace(address _spender) public onlyOwner {
@@ -142,18 +149,13 @@ contract HedgehogApprovesMarketplaces is MoonHedgehogSale {
     }
 
     function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
-        // Opensea, LooksRare, Rarible, X2y2, Any Other Marketplace
-
         if (_operator == OpenSea(0xa5409ec958C83C3f309868babACA7c86DCB077c1).proxies(_owner)) return true;
-        else if (_operator == 0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e) return true;
-        else if (_operator == 0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be) return true;
-        else if (_operator == 0xF849de01B080aDC3A814FaBE1E2087475cF2E354) return true;
-        else if (allowed[_operator]) return true;
+        else if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
 }
 
-contract MoonHedgehogStaking is HedgehogApprovesMarketplaces {
+contract MoonHedgehogStaking is MoonHedgehogSale {
     mapping(address => bool) public canStake;
 
     function addToWhitelistForStaking(address _operator) external onlyOwner {
