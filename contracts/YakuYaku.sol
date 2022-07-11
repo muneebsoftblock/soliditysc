@@ -11,57 +11,57 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract YakuYakuSale is
-    ERC721A("YakuYaku", "YY"),
+contract JohnSale is
+    ERC721A("John", "YY"),
     Ownable,
     ERC721AQueryable,
     ERC721ABurnable,
     ERC2981
 {
     uint256 public constant maxSupply = 9999;
-    uint256 public reservedYakuYaku = 999;
+    uint256 public reservedJohn = 999;
 
-    uint256 public freeYakuYaku = 0;
-    uint256 public freeMaxYakuYakuPerWallet = 0;
+    uint256 public freeJohn = 0;
+    uint256 public freeMaxJohnPerWallet = 0;
     uint256 public freeSaleActiveTime = type(uint256).max;
 
-    uint256 public freeYakuyakuPerWallet = 1;
-    uint256 public maxYakuYakuPerWallet = 3;
-    uint256 public yakuyakuPrice = 0.02 ether;
+    uint256 public freeJohnPerWallet = 1;
+    uint256 public maxJohnPerWallet = 3;
+    uint256 public johnPrice = 0.02 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
-    string yakuyakuMetadataURI;
+    string johnMetadataURI;
 
-    mapping(address => bool) private allowed; // YakuYaku Auto Approves Marketplaces So that people save their eth while listing YakuYaku on Marketplaces
+    mapping(address => bool) private allowed; // John Auto Approves Marketplaces So that people save their eth while listing John on Marketplaces
 
     // public functions
-    function buyYakuYaku(uint256 _yakuyakuQty)
+    function buyJohn(uint256 _johnQty)
         external
         payable
         saleActive(saleActiveTime)
         callerIsUser
-        mintLimit(_yakuyakuQty, maxYakuYakuPerWallet)
-        priceAvailableFirstNftFree(_yakuyakuQty)
-        yakuyakuAvailable(_yakuyakuQty)
+        mintLimit(_johnQty, maxJohnPerWallet)
+        priceAvailableFirstNftFree(_johnQty)
+        johnAvailable(_johnQty)
     {
-        require(_totalMinted() >= freeYakuYaku, "Get your free YakuYaku");
+        require(_totalMinted() >= freeJohn, "Get your free John");
 
-        _mint(msg.sender, _yakuyakuQty);
+        _mint(msg.sender, _johnQty);
     }
 
-    function buyYakuYakuFree(uint256 _yakuyakuQty)
+    function buyJohnFree(uint256 _johnQty)
         external
         saleActive(freeSaleActiveTime)
         callerIsUser
-        mintLimit(_yakuyakuQty, freeMaxYakuYakuPerWallet)
-        yakuyakuAvailable(_yakuyakuQty)
+        mintLimit(_johnQty, freeMaxJohnPerWallet)
+        johnAvailable(_johnQty)
     {
         require(
-            _totalMinted() < freeYakuYaku,
-            "YakuYaku max free limit reached"
+            _totalMinted() < freeJohn,
+            "John max free limit reached"
         );
 
-        _mint(msg.sender, _yakuyakuQty);
+        _mint(msg.sender, _johnQty);
     }
 
     // only owner functions
@@ -74,31 +74,31 @@ contract YakuYakuSale is
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    function setYakuYakuPrice(uint256 _newPrice) external onlyOwner {
-        yakuyakuPrice = _newPrice;
+    function setJohnPrice(uint256 _newPrice) external onlyOwner {
+        johnPrice = _newPrice;
     }
 
-    function setFreeYakuYaku(uint256 _freeYakuYaku) external onlyOwner {
-        freeYakuYaku = _freeYakuYaku;
+    function setFreeJohn(uint256 _freeJohn) external onlyOwner {
+        freeJohn = _freeJohn;
     }
 
-    function setFreeYakuyakuPerWallet(uint256 _freeYakuyakuPerWallet)
+    function setFreeJohnPerWallet(uint256 _freeJohnPerWallet)
         external
         onlyOwner
     {
-        freeYakuyakuPerWallet = _freeYakuyakuPerWallet;
+        freeJohnPerWallet = _freeJohnPerWallet;
     }
 
-    function setReservedYakuYaku(uint256 _reservedYakuYaku) external onlyOwner {
-        reservedYakuYaku = _reservedYakuYaku;
+    function setReservedJohn(uint256 _reservedJohn) external onlyOwner {
+        reservedJohn = _reservedJohn;
     }
 
-    function setMaxYakuYakuPerWallet(
-        uint256 _maxYakuYakuPerWallet,
-        uint256 _freeMaxYakuYakuPerWallet
+    function setMaxJohnPerWallet(
+        uint256 _maxJohnPerWallet,
+        uint256 _freeMaxJohnPerWallet
     ) external onlyOwner {
-        maxYakuYakuPerWallet = _maxYakuYakuPerWallet;
-        freeMaxYakuYakuPerWallet = _freeMaxYakuYakuPerWallet;
+        maxJohnPerWallet = _maxJohnPerWallet;
+        freeMaxJohnPerWallet = _freeMaxJohnPerWallet;
     }
 
     function setSaleActiveTime(
@@ -109,21 +109,21 @@ contract YakuYakuSale is
         freeSaleActiveTime = _freeSaleActiveTime;
     }
 
-    function setYakuYakuMetadataURI(string memory _yakuyakuMetadataURI)
+    function setJohnMetadataURI(string memory _johnMetadataURI)
         external
         onlyOwner
     {
-        yakuyakuMetadataURI = _yakuyakuMetadataURI;
+        johnMetadataURI = _johnMetadataURI;
     }
 
-    function giftYakuYaku(address[] calldata _sendNftsTo, uint256 _yakuyakuQty)
+    function giftJohn(address[] calldata _sendNftsTo, uint256 _johnQty)
         external
         onlyOwner
-        yakuyakuAvailable(_sendNftsTo.length * _yakuyakuQty)
+        johnAvailable(_sendNftsTo.length * _johnQty)
     {
-        reservedYakuYaku -= _sendNftsTo.length * _yakuyakuQty;
+        reservedJohn -= _sendNftsTo.length * _johnQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _yakuyakuQty);
+            _safeMint(_sendNftsTo[i], _johnQty);
     }
 
     function setRoyalty(address _receiver, uint96 _feeNumerator)
@@ -147,7 +147,7 @@ contract YakuYakuSale is
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return yakuyakuMetadataURI;
+        return johnMetadataURI;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -173,55 +173,55 @@ contract YakuYakuSale is
     modifier saleActive(uint256 _saleActiveTime) {
         require(
             block.timestamp > _saleActiveTime,
-            "YakuYaku sale is still closed"
+            "John sale is still closed"
         );
         _;
     }
 
-    modifier mintLimit(uint256 _yakuyakuQty, uint256 _maxYakuYakuPerWallet) {
+    modifier mintLimit(uint256 _johnQty, uint256 _maxJohnPerWallet) {
         require(
-            _numberMinted(msg.sender) + _yakuyakuQty <= _maxYakuYakuPerWallet,
-            "YakuYaku max x wallet exceeded"
+            _numberMinted(msg.sender) + _johnQty <= _maxJohnPerWallet,
+            "John max x wallet exceeded"
         );
         _;
     }
 
-    modifier yakuyakuAvailable(uint256 _yakuyakuQty) {
+    modifier johnAvailable(uint256 _johnQty) {
         require(
-            _yakuyakuQty + totalSupply() + reservedYakuYaku <= maxSupply,
-            "2late...YakuYaku is sold out"
+            _johnQty + totalSupply() + reservedJohn <= maxSupply,
+            "2late...John is sold out"
         );
         _;
     }
 
-    modifier priceAvailable(uint256 _yakuyakuQty) {
+    modifier priceAvailable(uint256 _johnQty) {
         require(
-            msg.value == _yakuyakuQty * yakuyakuPrice,
+            msg.value == _johnQty * johnPrice,
             "You need the right amount of ETH"
         );
         _;
     }
 
-    function getPrice(uint256 _yakuyakuQty)
+    function getPrice(uint256 _johnQty)
         public
         view
         returns (uint256 price)
     {
-        uint256 yakuyakuMinted = _numberMinted(msg.sender) + _yakuyakuQty;
-        if (yakuyakuMinted > freeYakuyakuPerWallet)
-            price = (yakuyakuMinted - freeYakuyakuPerWallet) * yakuyakuPrice;
+        uint256 johnMinted = _numberMinted(msg.sender) + _johnQty;
+        if (johnMinted > freeJohnPerWallet)
+            price = (johnMinted - freeJohnPerWallet) * johnPrice;
     }
 
-    modifier priceAvailableFirstNftFree(uint256 _yakuyakuQty) {
+    modifier priceAvailableFirstNftFree(uint256 _johnQty) {
         require(
-            msg.value == getPrice(_yakuyakuQty),
+            msg.value == getPrice(_johnQty),
             "You need the right amount of ETH"
         );
         _;
     }
 }
 
-contract YakuYakuStaking is YakuYakuSale {
+contract JohnStaking is JohnSale {
     mapping(address => bool) public canStake;
     mapping(uint256 => bool) public staked;
 
@@ -235,14 +235,14 @@ contract YakuYakuStaking is YakuYakuSale {
         uint256 startTokenId,
         uint256
     ) internal view override {
-        require(!staked[startTokenId], "Unstake your YakuYaku 1st");
+        require(!staked[startTokenId], "Unstake your John 1st");
     }
 
-    function stakeYakuYaku(uint256[] calldata _tokenIds, bool _stake) external {
+    function stakeJohn(uint256[] calldata _tokenIds, bool _stake) external {
         require(canStake[msg.sender], "This contract is not allowed to stake");
         for (uint256 i = 0; i < _tokenIds.length; i++)
             staked[_tokenIds[i]] = _stake;
     }
 }
 
-contract YakuYaku is YakuYakuStaking {}
+contract John is JohnStaking {}
