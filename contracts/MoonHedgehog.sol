@@ -194,13 +194,8 @@ contract MoonHedgehogSale is
     }
 
     function getPrice(uint256 _qty) public view returns (uint256 price) {
-        uint256 totalPrice = _qty * hedgehogPrice;
-        uint256 numberMinted = _numberMinted(msg.sender);
-        uint256 discountQty = firstFreeMints > numberMinted
-            ? firstFreeMints - numberMinted
-            : 0;
-        uint256 discount = discountQty * hedgehogPrice;
-        price = totalPrice > discount ? totalPrice - discount : 0;
+        uint256 minted = _numberMinted(msg.sender) + qty;
+        if (minted > free) price = (minted - free) * hedgehogPrice;
     }
 
     modifier priceAvailableFirstNftFree(uint256 _hedgehogQty) {
