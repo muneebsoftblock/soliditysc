@@ -22,18 +22,18 @@ contract MoonHedgehogsSale is
 {
     // Variables
    uint256 public constant maxSupply = 10000;
-    uint256 public reservedHedgehog = 500;
+    uint256 public reservedHedgehogs = 500;
 
-    uint256 public freeHedgehog = 0;
-    uint256 public freeMaxHedgehogPerWallet = 0;
+    uint256 public freeHedgehogs = 0;
+    uint256 public freeMaxHedgehogsPerWallet = 0;
     uint256 public freeSaleActiveTime = type(uint256).max;
 
     uint256 public firstFreeMints = 1;
-    uint256 public maxHedgehogPerWallet = 2;
-    uint256 public hedgehogPrice = 0.01 ether;
+    uint256 public maxHedgehogsPerWallet = 2;
+    uint256 public hedgehogsPrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
-    string hedgehogMetadataURI;
+    string hedgehogsMetadataURI;
 
     // these lines are called only once when the contract is deployed
     constructor() {
