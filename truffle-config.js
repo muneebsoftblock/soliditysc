@@ -6,7 +6,9 @@ module.exports = {
       host: "127.0.0.1"
     }
   },
-  mocha: {},
+  mocha: {
+    reporter: 'eth-gas-reporter'
+  },
   compilers: {
     solc: {
       version: "0.8.14"

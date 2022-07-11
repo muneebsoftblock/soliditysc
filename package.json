@@ -13,5 +13,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.7.0",
     "erc721a": "^3.3.0"
+  },
+  "devDependencies": {
+    "eth-gas-reporter": "^0.2.25"
   }
 }
