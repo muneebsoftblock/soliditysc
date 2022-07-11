@@ -21,6 +21,8 @@ contract('MoonHedgehog', ([alice, bob, carol, owner]) => {
       });
     }
 
+    await sc.withdraw({ from: owner });
+
     return assert.isTrue(true);
   });
 });
