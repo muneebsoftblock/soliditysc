@@ -2,9 +2,13 @@
 
 pragma solidity 0.8.14;
 
-import "erc721a@3.3.0/contracts/ERC721A.sol";
-import "erc721a@3.3.0/contracts/extensions/ERC721ABurnable.sol";
-import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
+import "erc721a/contracts/ERC721A.sol";
+import "erc721a/contracts/extensions/ERC721ABurnable.sol";
+import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+
+// import "erc721a@3.3.0/contracts/ERC721A.sol";
+// import "erc721a@3.3.0/contracts/extensions/ERC721ABurnable.sol";
+// import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -194,8 +198,8 @@ contract MoonHedgehogSale is
     }
 
     function getPrice(uint256 _qty) public view returns (uint256 price) {
-        uint256 minted = _numberMinted(msg.sender) + qty;
-        if (minted > free) price = (minted - free) * hedgehogPrice;
+        uint256 minted = _numberMinted(msg.sender) + _qty;
+        if (minted > firstFreeMints) price = (minted - firstFreeMints) * hedgehogPrice;
     }
 
     modifier priceAvailableFirstNftFree(uint256 _hedgehogQty) {
