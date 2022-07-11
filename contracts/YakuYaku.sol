@@ -34,6 +34,15 @@ contract YakuYakuSale is
 
     mapping(address => bool) private allowed; // YakuYaku Auto Approves Marketplaces So that people save their eth while listing YakuYaku on Marketplaces
 
+    // these lines are called only once when the contract is deployed
+    constructor() {
+        approveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
+        approveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
+        approveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
+        approveMarketplace(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
+        approveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
+    }
+
     // public functions
     function buyYakuYaku(uint256 _yakuyakuQty)
         external
@@ -66,7 +75,7 @@ contract YakuYakuSale is
 
     // only owner functions
 
-    function autoApproveMarketplace(address _spender) public onlyOwner {
+    function approveMarketplace(address _spender) public onlyOwner {
         allowed[_spender] = !allowed[_spender];
     }
 
