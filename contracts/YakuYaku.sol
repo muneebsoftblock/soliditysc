@@ -222,26 +222,17 @@ contract YakuYakuSale is
 }
 
 contract YakuYakuStaking is YakuYakuSale {
-    mapping(address => bool) public canStake;
-    mapping(uint256 => bool) public staked;
-
-    function addToWhitelistForStaking(address _operator) external onlyOwner {
-        canStake[_operator] = !canStake[_operator];
-    }
-
     function _beforeTokenTransfers(
         address,
         address,
         uint256 startTokenId,
         uint256
     ) internal view override {
-        require(!staked[startTokenId], "Unstake your YakuYaku 1st");
-    }
-
-    function stakeYakuYaku(uint256[] calldata _tokenIds, bool _stake) external {
-        require(canStake[msg.sender], "This contract is not allowed to stake");
-        for (uint256 i = 0; i < _tokenIds.length; i++)
-            staked[_tokenIds[i]] = _stake;
+        // to save external calls when there is no staking atm, test with and without the check, gas saved.
+        require(
+            stakingContract != address(0) && Staking(sc).isStaked(startTokenId),
+            "Unstake your YakuYaku 1st"
+        );
     }
 }
 
