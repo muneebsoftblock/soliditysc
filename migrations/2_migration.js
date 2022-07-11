@@ -1,5 +1,5 @@
-const MoonHedgehog = artifacts.require("MoonHedgehog");
+const MoonHedgehogs = artifacts.require('MoonHedgehogs');
 
 module.exports = function (deployer) {
-  deployer.deploy(MoonHedgehog);
+  deployer.deploy(MoonHedgehogs);
 };
