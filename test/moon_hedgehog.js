@@ -9,14 +9,36 @@ contract('MoonHedgehog', ([alice, bob, carol, owner]) => {
     console.log({ scOwner, scAddr });
 
     await sc.setSaleActiveTime(0, 0, { from: owner });
-    await sc.setFirstFreeMints(5, { from: owner });
+    await sc.setFirstFreeMints(2, { from: owner });
+    await sc.setMaxHedgehogPerWallet(5, 0, { from: owner });
 
     {
-      const qty = 3;
-      const price = '' + (await sc.getPrice(qty, { from: bob }));
+      const qty = 1;
+      const from = alice;
+      const price = '' + (await sc.getPrice(qty, { from }));
       console.log({ price });
       await sc.buyHedgehog(qty, {
-        from: bob,
+        from,
+        value: price,
+      });
+    }
+    {
+      const qty = 3;
+      const from = bob;
+      const price = '' + (await sc.getPrice(qty, { from }));
+      console.log({ price });
+      await sc.buyHedgehog(qty, {
+        from,
+        value: price,
+      });
+    }
+    {
+      const qty = 5;
+      const from = carol;
+      const price = '' + (await sc.getPrice(qty, { from }));
+      console.log({ price });
+      await sc.buyHedgehog(qty, {
+        from,
         value: price,
       });
     }
