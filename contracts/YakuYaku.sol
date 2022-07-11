@@ -223,16 +223,34 @@ contract YakuYakuSale is
 
 contract YakuYakuStaking is YakuYakuSale {
     function _beforeTokenTransfers(
-        address,
-        address,
-        uint256 startTokenId,
+        address _from,
+        address _to,
+        uint256 _tokenId,
         uint256
     ) internal view override {
-        // to save external calls when there is no staking atm, test with and without the check, gas saved.
-        require(
-            stakingContract != address(0) && Staking(sc).isStaked(startTokenId),
-            "Unstake your YakuYaku 1st"
-        );
+        // add on off button of this, record and send eth, maybe os does not give us eth and we give eth to others
+        // maybe we get all the eth from sales? tes os = 0
+
+        // ignore the mint state
+        if (_from != address(0)) {
+
+            
+
+            address rewardWinner;
+
+            if (firstSeller[_tokenId] == address(0)) {
+                rewardWinner = from;
+                firstSeller[_tokenId] = from;
+            }
+
+            firstSeller[from];
+
+            if (msg.value >= yakuyakuPrice * 1.5) {
+                payable(_from).transfer(msg.value * 0.05);
+            } else if (msg.value >= yakuyakuPrice * 1.25) {
+                payable(_from).transfer(msg.value * 0.05);
+            }
+        }
     }
 }
 
