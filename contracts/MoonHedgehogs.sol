@@ -9,6 +9,7 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
+
 contract MoonHedgehogsSale is
     ERC721A("Moon Hedgehogs", "MH"),
     Ownable,
