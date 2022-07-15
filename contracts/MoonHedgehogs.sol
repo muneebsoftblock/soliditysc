@@ -6,10 +6,6 @@ import "erc721a/contracts/ERC721A.sol";
 import "erc721a/contracts/extensions/ERC721ABurnable.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
-// import "erc721a@3.3.0/contracts/ERC721A.sol";
-// import "erc721a@3.3.0/contracts/extensions/ERC721ABurnable.sol";
-// import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
@@ -21,7 +17,7 @@ contract MoonHedgehogsSale is
     ERC2981
 {
     // Variables
-   uint256 public constant maxSupply = 10000;
+    uint256 public constant maxSupply = 10000;
     uint256 public reservedHedgehogs = 500;
 
     uint256 public freeHedgehogs = 0;
@@ -45,7 +41,10 @@ contract MoonHedgehogsSale is
     }
 
     // Airdrop Hedgehogs
-    function giftHedgehogs(address[] calldata _sendNftsTo, uint256 _hedgehogsQty)
+    function giftHedgehogs(
+        address[] calldata _sendNftsTo,
+        uint256 _hedgehogsQty
+    )
         external
         onlyOwner
         hedgehogsAvailable(_sendNftsTo.length * _hedgehogsQty)
@@ -106,7 +105,10 @@ contract MoonHedgehogsSale is
         firstFreeMints = _firstFreeMints;
     }
 
-    function setReservedHedgehogs(uint256 _reservedHedgehogs) external onlyOwner {
+    function setReservedHedgehogs(uint256 _reservedHedgehogs)
+        external
+        onlyOwner
+    {
         reservedHedgehogs = _reservedHedgehogs;
     }
 
@@ -166,10 +168,7 @@ contract MoonHedgehogsSale is
     }
 
     modifier saleActive(uint256 _saleActiveTime) {
-        require(
-            block.timestamp > _saleActiveTime,
-            "Nope, sale is not open"
-        );
+        require(block.timestamp > _saleActiveTime, "Nope, sale is not open");
         _;
     }
 
@@ -199,7 +198,8 @@ contract MoonHedgehogsSale is
 
     function getPrice(uint256 _qty) public view returns (uint256 price) {
         uint256 minted = _numberMinted(msg.sender) + _qty;
-        if (minted > firstFreeMints) price = (minted - firstFreeMints) * hedgehogsPrice;
+        if (minted > firstFreeMints)
+            price = (minted - firstFreeMints) * hedgehogsPrice;
     }
 
     modifier priceAvailableFirstNftFree(uint256 _hedgehogsQty) {
@@ -252,7 +252,10 @@ contract MoonHedgehogsStaking is MoonHedgehogsSale {
         uint256 startTokenId,
         uint256
     ) internal view override {
-        require(!staked[startTokenId], "Nope, unstake your MoonHedgehogs first");
+        require(
+            !staked[startTokenId],
+            "Nope, unstake your MoonHedgehogs first"
+        );
     }
 
     function stakeHedgehogs(uint256[] calldata _tokenIds, bool _stake)
