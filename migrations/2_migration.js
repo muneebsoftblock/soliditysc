@@ -1,5 +1,5 @@
-const MoonHedgehogs = artifacts.require('MoonHedgehogs');
+const Nft = artifacts.require('Nft');
 
 module.exports = function (deployer) {
-  deployer.deploy(MoonHedgehogs);
+  deployer.deploy(Nft);
 };

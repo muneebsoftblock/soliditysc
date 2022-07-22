@@ -9,9 +9,8 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-
-contract MoonHedgehogsSale is
-    ERC721A("Moon Hedgehogs", "MH"),
+contract NftSale is
+    ERC721A("Nft", "NFT"),
     Ownable,
     ERC721AQueryable,
     ERC721ABurnable,
@@ -19,73 +18,81 @@ contract MoonHedgehogsSale is
 {
     // Variables
     uint256 public constant maxSupply = 10000;
-    uint256 public reservedHedgehogs = 500;
+    uint256 public reservedNft = 500;
 
-    uint256 public freeHedgehogs = 0;
-    uint256 public freeMaxHedgehogsPerWallet = 0;
-    uint256 public freeSaleActiveTime = type(uint256).max;
+    uint256 public freeNft = 9000;
+    uint256 public freeMaxNftPerWallet = 1;
+    uint256 public freeSaleActiveTime = 0;
 
     uint256 public firstFreeMints = 1;
-    uint256 public maxHedgehogsPerWallet = 2;
-    uint256 public hedgehogsPrice = 0.01 ether;
+    uint256 public maxNftPerWallet = 2;
+    uint256 public nftPrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
-    string hedgehogsMetadataURI;
+    string nftMetadataURI = 'ipfs://QmYPUsj8JHzrr2SBtppvj1EmmvU1wFf9TKSrkD7cxBYhhY/';
 
     // these lines are called only once when the contract is deployed
     constructor() {
-        autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
-        autoApproveMarketplace(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
-        autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
-        autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
-        autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
+        approveSpender(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
+        approveSpender(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
+        approveSpender(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
+        approveSpender(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
+        approveSpender(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
     }
 
-    // Airdrop Hedgehogs
-    function giftHedgehogs(
-        address[] calldata _sendNftsTo,
-        uint256 _hedgehogsQty
-    )
+    // setters
+    function setNftPrice(uint256 _newPrice) external onlyOwner {
+        nftPrice = _newPrice;
+    }
+
+    function setFreeNft(uint256 _freeNft) external onlyOwner {
+        freeNft = _freeNft;
+    }
+
+    function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
+        firstFreeMints = _firstFreeMints;
+    }
+
+    function setReservedNft(uint256 _reservedNft) external onlyOwner {
+        reservedNft = _reservedNft;
+    }
+
+    // Airdrop Nft
+    function giftNft(address[] calldata _sendNftsTo, uint256 _nftQty)
         external
         onlyOwner
-        hedgehogsAvailable(_sendNftsTo.length * _hedgehogsQty)
+        nftAvailable(_sendNftsTo.length * _nftQty)
     {
-        reservedHedgehogs -= _sendNftsTo.length * _hedgehogsQty;
+        reservedNft -= _sendNftsTo.length * _nftQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _hedgehogsQty);
+            _safeMint(_sendNftsTo[i], _nftQty);
     }
 
-    // buy / mint Hedgehogs Nfts here
-    function buyHedgehogs(uint256 _hedgehogsQty)
+    // buy / mint Nft Nfts here
+    function buyNft(uint256 _nftQty)
         external
         payable
         saleActive(saleActiveTime)
         callerIsUser
-        mintLimit(_hedgehogsQty, maxHedgehogsPerWallet)
-        priceAvailableFirstNftFree(_hedgehogsQty)
-        hedgehogsAvailable(_hedgehogsQty)
+        mintLimit(_nftQty, maxNftPerWallet)
+        priceAvailableFirstNftFree(_nftQty)
+        nftAvailable(_nftQty)
     {
-        require(
-            _totalMinted() >= freeHedgehogs,
-            "Get your MoonHedgehogs for free"
-        );
+        require(_totalMinted() >= freeNft, "Get your Nft for free");
 
-        _mint(msg.sender, _hedgehogsQty);
+        _mint(msg.sender, _nftQty);
     }
 
-    function buyHedgehogsFree(uint256 _hedgehogsQty)
+    function buyNftFree(uint256 _nftQty)
         external
         saleActive(freeSaleActiveTime)
         callerIsUser
-        mintLimit(_hedgehogsQty, freeMaxHedgehogsPerWallet)
-        hedgehogsAvailable(_hedgehogsQty)
+        mintLimit(_nftQty, freeMaxNftPerWallet)
+        nftAvailable(_nftQty)
     {
-        require(
-            _totalMinted() < freeHedgehogs,
-            "MoonHedgehogs max free limit reached"
-        );
+        require(_totalMinted() < freeNft, "Nft max free limit reached");
 
-        _mint(msg.sender, _hedgehogsQty);
+        _mint(msg.sender, _nftQty);
     }
 
     // withdraw eth
@@ -93,32 +100,12 @@ contract MoonHedgehogsSale is
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    // setters
-    function setHedgehogsPrice(uint256 _newPrice) external onlyOwner {
-        hedgehogsPrice = _newPrice;
-    }
-
-    function setFreeHedgehogs(uint256 _freeHedgehogs) external onlyOwner {
-        freeHedgehogs = _freeHedgehogs;
-    }
-
-    function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
-        firstFreeMints = _firstFreeMints;
-    }
-
-    function setReservedHedgehogs(uint256 _reservedHedgehogs)
-        external
-        onlyOwner
-    {
-        reservedHedgehogs = _reservedHedgehogs;
-    }
-
-    function setMaxHedgehogsPerWallet(
-        uint256 _maxHedgehogsPerWallet,
-        uint256 _freeMaxHedgehogsPerWallet
+    function setMaxNftPerWallet(
+        uint256 _maxNftPerWallet,
+        uint256 _freeMaxNftPerWallet
     ) external onlyOwner {
-        maxHedgehogsPerWallet = _maxHedgehogsPerWallet;
-        freeMaxHedgehogsPerWallet = _freeMaxHedgehogsPerWallet;
+        maxNftPerWallet = _maxNftPerWallet;
+        freeMaxNftPerWallet = _freeMaxNftPerWallet;
     }
 
     function setSaleActiveTime(
@@ -129,11 +116,11 @@ contract MoonHedgehogsSale is
         freeSaleActiveTime = _freeSaleActiveTime;
     }
 
-    function setHedgehogsMetadataURI(string memory _hedgehogsMetadataURI)
+    function setNftMetadataURI(string memory _nftMetadataURI)
         external
         onlyOwner
     {
-        hedgehogsMetadataURI = _hedgehogsMetadataURI;
+        nftMetadataURI = _nftMetadataURI;
     }
 
     function setRoyalty(address _receiver, uint96 _feeNumerator)
@@ -145,7 +132,7 @@ contract MoonHedgehogsSale is
 
     // System Related
     function _baseURI() internal view override returns (string memory) {
-        return hedgehogsMetadataURI;
+        return nftMetadataURI;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -173,26 +160,26 @@ contract MoonHedgehogsSale is
         _;
     }
 
-    modifier mintLimit(uint256 _hedgehogsQty, uint256 _maxHedgehogsPerWallet) {
+    modifier mintLimit(uint256 _nftQty, uint256 _maxNftPerWallet) {
         require(
-            _numberMinted(msg.sender) + _hedgehogsQty <= _maxHedgehogsPerWallet,
-            "MoonHedgehogs max x wallet exceeded"
+            _numberMinted(msg.sender) + _nftQty <= _maxNftPerWallet,
+            "Nft max x wallet exceeded"
         );
         _;
     }
 
-    modifier hedgehogsAvailable(uint256 _hedgehogsQty) {
+    modifier nftAvailable(uint256 _nftQty) {
         require(
-            _hedgehogsQty + totalSupply() + reservedHedgehogs <= maxSupply,
-            "Currently are sold out"
+            _nftQty + totalSupply() + reservedNft <= maxSupply,
+            "Hmm, we are sold out"
         );
         _;
     }
 
-    modifier priceAvailable(uint256 _hedgehogsQty) {
+    modifier priceAvailable(uint256 _nftQty) {
         require(
-            msg.value == _hedgehogsQty * hedgehogsPrice,
-            "Hey hey, send the right amount of ETH"
+            msg.value == _nftQty * nftPrice,
+            "Send the right amount of ETH"
         );
         _;
     }
@@ -200,21 +187,18 @@ contract MoonHedgehogsSale is
     function getPrice(uint256 _qty) public view returns (uint256 price) {
         uint256 minted = _numberMinted(msg.sender) + _qty;
         if (minted > firstFreeMints)
-            price = (minted - firstFreeMints) * hedgehogsPrice;
+            price = (minted - firstFreeMints) * nftPrice;
     }
 
-    modifier priceAvailableFirstNftFree(uint256 _hedgehogsQty) {
-        require(
-            msg.value == getPrice(_hedgehogsQty),
-            "Hey hey, send the right amount of ETH"
-        );
+    modifier priceAvailableFirstNftFree(uint256 _nftQty) {
+        require(msg.value == getPrice(_nftQty), "Send the right amount of ETH");
         _;
     }
 
-    // Hedgehogs Auto Approves Marketplaces
+    // Nft Auto Approves Marketplaces
     mapping(address => bool) private allowed;
 
-    function autoApproveMarketplace(address _spender) public onlyOwner {
+    function approveSpender(address _spender) public onlyOwner {
         allowed[_spender] = !allowed[_spender];
     }
 
@@ -224,52 +208,7 @@ contract MoonHedgehogsSale is
         override(ERC721A, IERC721)
         returns (bool)
     {
-        if (
-            _operator ==
-            OpenSea(0xa5409ec958C83C3f309868babACA7c86DCB077c1).proxies(_owner)
-        ) return true;
-        else if (allowed[_operator]) return true; // Opensea or any other Marketplace
+        if (allowed[_operator]) return true;
         return super.isApprovedForAll(_owner, _operator);
     }
 }
-
-contract MoonHedgehogsStaking is MoonHedgehogsSale {
-    mapping(address => bool) public canStake;
-
-    function addToWhitelistForStaking(address _operator) external onlyOwner {
-        canStake[_operator] = !canStake[_operator];
-    }
-
-    modifier onlyWhitelistedForStaking() {
-        require(canStake[msg.sender], "This contract is not allowed to stake");
-        _;
-    }
-
-    mapping(uint256 => bool) public staked;
-
-    function _beforeTokenTransfers(
-        address,
-        address,
-        uint256 startTokenId,
-        uint256
-    ) internal view override {
-        require(
-            !staked[startTokenId],
-            "Nope, unstake your MoonHedgehogs first"
-        );
-    }
-
-    function stakeHedgehogs(uint256[] calldata _tokenIds, bool _stake)
-        external
-        onlyWhitelistedForStaking
-    {
-        for (uint256 i = 0; i < _tokenIds.length; i++)
-            staked[_tokenIds[i]] = _stake;
-    }
-}
-
-interface OpenSea {
-    function proxies(address) external view returns (address);
-}
-
-contract MoonHedgehogs is MoonHedgehogsStaking {}
