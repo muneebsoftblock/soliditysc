@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -159,7 +159,7 @@ contract Morph is
     {
         _safeMint(msg.sender, _qty);
 
-        require(totalSupply() <= maxSupply, "Try mint less");
+        require(totalSupply() <= 500, "Whitelist sold out.");
         require(tx.origin == msg.sender, "The caller is a contract");
         require(inWhitelist(msg.sender, _proof), "You are not in whitelist");
         require(
