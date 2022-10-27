@@ -1,6 +1,3 @@
-// Crypto Morphs Club
-// 10,000 Morphs are Invading the Metaverse to takeover their throne as the rightful rulers
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
