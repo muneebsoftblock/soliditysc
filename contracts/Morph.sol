@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import "erc721a/contracts/ERC721A.sol";
-import "erc721a/contracts/extensions/ERC721ABurnable.sol";
-import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+import "erc721a@3.3.0/contracts/ERC721A.sol";
+import "erc721a@3.3.0/contracts/extensions/ERC721ABurnable.sol";
+import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
 contract Morph is
     ERC721A("Morph", "MORPH"),
