@@ -1,32 +1,55 @@
-make total discount possible and minus it from available price
+Output 28-Oct-2022
+
+npm run test 
 
 
-if minted <= free, price = 0
-else fee = (minted - free) * price
+> soliditysc@1.0.0 test
+> truffle test
+
+Using network 'development'.
 
 
-minted+=qty
-if minted <= free, no fee
-else fee = (minted - free) * price
+Compiling your contracts...
+===========================
+> Compiling ./contracts/Morph.sol
+> Artifacts written to /var/folders/s1/r0t1_765079ftxstp570rhbw0000gn/T/test--45088-UTn0oohGN9tw
+> Compiled successfully using:
+   - solc: 0.8.14+commit.80d49f37.Emscripten.clang
 
-===================================================================================
-totDisc = freeItemsCanBuy * itemPrice
-price = itemsToBuy * itemPrice
-totalPrice = price - totDisc
+  Contract: Nft
+true
+1000.462925732671740147
+1000.462864493873668047
+1000.462802900110072297
+1000.962725205864150547
+    ✓ deploy smart contract (3248830 gas)
 
+·------------------------------------------|---------------------------|-------------|----------------------------·
+|   Solc version: 0.8.14+commit.80d49f37   ·  Optimizer enabled: true  ·  Runs: 200  ·  Block limit: 6718946 gas  │
+···········································|···························|·············|·····························
+|  Methods                                                                                                        │
+···············|···························|·············|·············|·············|··············|··············
+|  Contract    ·  Method                   ·  Min        ·  Max        ·  Avg        ·  # calls     ·  eur (avg)  │
+···············|···························|·············|·············|·············|··············|··············
+|  Migrations  ·  setCompleted             ·          -  ·          -  ·      28590  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  purchaseMorphs           ·          -  ·          -  ·      67617  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  purchaseMorphsWhitelist  ·          -  ·          -  ·      88206  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  setSaleActiveTime        ·          -  ·          -  ·      23890  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  setWhitelist             ·          -  ·          -  ·      46107  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  setWhitelistActiveTime   ·          -  ·          -  ·      23822  ·           1  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Morph       ·  withdraw                 ·      23650  ·      30350  ·      27000  ·           2  ·          -  │
+···············|···························|·············|·············|·············|··············|··············
+|  Deployments                             ·                                         ·  % of limit  ·             │
+···········································|·············|·············|·············|··············|··············
+|  Migrations                              ·          -  ·          -  ·     155210  ·       2.3 %  ·          -  │
+···········································|·············|·············|·············|··············|··············
+|  Morph                                   ·          -  ·          -  ·    2945188  ·      43.8 %  ·          -  │
+·------------------------------------------|-------------|-------------|-------------|--------------|-------------·
 
-totalPrice = (itemsToBuy * itemPrice) - (freeItemsCanBuy * itemPrice)
-totalPrice = itemPrice (itemsToBuy - freeItemsCanBuy)
-
-
-totalPrice = itemPrice (itemsToBuy - (numberFreeForAll - numberMinted))
-
-
-totalPrice =  itemPrice * itemsToBuy - itemPrice * (numberFreeForAll - numberMinted))
-totalPrice =  itemPrice * itemsToBuy - itemPrice * numberFreeForAll + itemPrice * numberMinted
-totalPrice + itemPrice * numberFreeForAll =  itemPrice * itemsToBuy + itemPrice * numberMinted
-
-===================================================================================
-totDisc = freeItemsCanBuy-mintedQty * itemsToBuy
-price = itemsToBuy * itemPrice
-totalPrice = disc - price
+  1 passing (2s)
