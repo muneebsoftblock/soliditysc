@@ -20,15 +20,15 @@ contract('Nft', async ([owner, client, parentCompany]) => {
       '0xBCb03471E33C68BCdD2bA1D846E4737fedb768Fa',
       '0x590AD8E5Fd87f05B064FCaE86703039d1F0e4350',
       '0x989b691745F7B0139a429d2B36364668a01A39Cf',
-    ]
+    ];
     const tree = new MerkleTree(whitelist, keccak256, {
       hashLeaves: true,
       sortPairs: true,
     });
     console.log({ root: tree.getHexRoot() });
     await nft.setWhitelist(tree.getHexRoot(), { from: owner });
-    
     await nft.setWhitelistActiveTime(0);
+
     await nft.purchaseMorphsWhitelist(1, tree.getHexProof(keccak256(client)), {
       value: toWei('0', 'ether'),
       from: client.toUpperCase(),
@@ -41,6 +41,16 @@ contract('Nft', async ([owner, client, parentCompany]) => {
     //
     await nft.setSaleActiveTime(0);
     await nft.purchaseMorphs(1, { value: toWei('0.5', 'ether'), from: client });
+    console.log(fromWei(await web3.eth.getBalance(owner)));
+    await nft.withdraw({ from: owner });
+    console.log(fromWei(await web3.eth.getBalance(owner)));
+
+    await nft.setMaxMorphsPerWalletWL(3, { from: owner });
+
+    await nft.purchaseMorphsWhitelist(1, tree.getHexProof(keccak256(client)), {
+      value: toWei('0', 'ether'),
+      from: client.toUpperCase(),
+    });
     console.log(fromWei(await web3.eth.getBalance(owner)));
     await nft.withdraw({ from: owner });
     console.log(fromWei(await web3.eth.getBalance(owner)));
