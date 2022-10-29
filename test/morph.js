@@ -25,8 +25,10 @@ contract('Nft', async ([owner, client, parentCompany]) => {
       hashLeaves: true,
       sortPairs: true,
     });
-    await nft.setWhitelistActiveTime(0);
+    console.log({ root: tree.getHexRoot() });
     await nft.setWhitelist(tree.getHexRoot(), { from: owner });
+    
+    await nft.setWhitelistActiveTime(0);
     await nft.purchaseMorphsWhitelist(1, tree.getHexProof(keccak256(client)), {
       value: toWei('0', 'ether'),
       from: client,
