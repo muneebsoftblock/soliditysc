@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import "erc721a@3.3.0/contracts/ERC721A.sol";
-import "erc721a@3.3.0/contracts/extensions/ERC721ABurnable.sol";
-import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
+import "erc721a/contracts/ERC721A.sol";
+import "erc721a/contracts/extensions/ERC721ABurnable.sol";
+import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
 contract Morph is
     ERC721A("Morph", "MORPH"),
@@ -23,15 +23,14 @@ contract Morph is
     bytes32 public whitelistMerkleRoot;
     uint256 public morphPriceWhitelist = 0 ether;
     uint256 public whitelistActiveTime = type(uint256).max;
+    uint256 public maxMorphsPerWalletWL = 1;
 
     // Main Sale Config
     uint256 public morphPrice = 0.5 ether;
     uint256 public constant maxSupply = 1000;
     uint256 public saleActiveTime = type(uint256).max;
     string public imagesFolder;
-
-    // Per Wallet Limit
-    uint256 public maxMorphsPerWallet = 2;
+    uint256 public maxMorphsPerWallet = 3;
 
     // Auto Approve Marketplaces
     mapping(address => bool) public approvedProxy;
@@ -159,7 +158,6 @@ contract Morph is
     {
         _safeMint(msg.sender, _qty);
 
-        require(totalSupply() <= 500, "Whitelist sold out.");
         require(tx.origin == msg.sender, "The caller is a contract");
         require(inWhitelist(msg.sender, _proof), "You are not in whitelist");
         require(
@@ -171,8 +169,8 @@ contract Morph is
             "Try to send exact amount of ETH"
         );
         require(
-            _numberMinted(msg.sender) == 1,
-            "Only 1 spot is available in whitelist"
+            _numberMinted(msg.sender) <= maxMorphsPerWalletWL,
+            "Max morphs per wallet reached"
         );
     }
 
@@ -196,11 +194,18 @@ contract Morph is
         whitelistActiveTime = _whitelistActiveTime;
     }
 
-    function setWhitelistMorphPrice(uint256 _morphPriceWhitelist)
+    function setMorphPriceWhitelist(uint256 _morphPriceWhitelist)
         external
         onlyOwner
     {
         morphPriceWhitelist = _morphPriceWhitelist;
+    }
+
+    function setMaxMorphsPerWalletWL(uint256 _maxMorphsPerWalletWL)
+        external
+        onlyOwner
+    {
+        maxMorphsPerWalletWL = _maxMorphsPerWalletWL;
     }
 
     function setWhitelist(bytes32 _whitelistMerkleRoot) external onlyOwner {
