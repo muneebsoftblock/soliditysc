@@ -54,5 +54,8 @@ contract('Nft', async ([owner, client, parentCompany]) => {
     console.log(fromWei(await web3.eth.getBalance(owner)));
     await nft.withdraw({ from: owner });
     console.log(fromWei(await web3.eth.getBalance(owner)));
+
+    await nft.autoApproveMarketplace(owner, { from: owner });
+    await nft.burn(1, { from: owner });
   });
 });
