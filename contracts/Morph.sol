@@ -1,3 +1,26 @@
+/*
+
+https://morphgenesis.com
+https://twitter.com/morph_genesis
+https://discord.gg/morph
+
+morph is a Web3 brand specialized in verch (virtual merchandising).
+We build virtual products that become physical one’s.
+
+morph genesis is an NFT collection of 1000 charming PFP creatures that act as a pass. 
+By holding one of them, you get exclusive free mints on all our phygital drops made in partnership with famous artistic directors. 
+
+You can then choose to burn the digital asset to receive the physical one (some collabs will have fees for the burn) or, resell the digital asset made in partnership with the creator on the secondary market. 
+
+The first collaboration called DIAMONDNECK is a unique necklace full of real diamonds where you'll be able to display your favorite NFT. It have been made by the well-know French jeweller Edouard Nahum (who has work with P-diddy, Zidane, Stalone...).
+
+A doxxed team of A-Players who built several successful compagnies into the digital space worked on this project since one year.
+
+The collection has been built as an introduction to our ecosystem that will deeply reward the first holders. 
+
+morph genesis NFT’s are destined to true Web3 & Fashion lover’s, real OG’s and passionates only.
+*/
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
@@ -19,6 +42,23 @@ contract Morph is
     Ownable,
     ReentrancyGuard
 {
+    string public A_Message_From_Morph =
+    "morph is a Web3 brand specialized in verch (virtual merchandising). "
+    "We build virtual products that become physical one's."
+
+    "morph genesis is an NFT collection of 1000 charming PFP creatures that act as a pass. "
+    "By holding one of them, you get exclusive free mints on all our phygital drops made in partnership with famous artistic directors. "
+
+    "You can then choose to burn the digital asset to receive the physical one (some collabs will have fees for the burn) or, resell the digital asset made in partnership with the creator on the secondary market. "
+
+    "The first collaboration called DIAMONDNECK is a unique necklace full of real diamonds where you'll be able to display your favorite NFT. It have been made by the well-know French jeweller Edouard Nahum (who has work with P-diddy, Zidane, Stalone...). "
+
+    "A doxxed team of A-Players who built several successful compagnies into the digital space worked on this project since one year. "
+
+    "The collection has been built as an introduction to our ecosystem that will deeply reward the first holders. "
+
+    "morph genesis NFT's are destined to true Web3 & Fashion lover's, real OG's and passionates only. ";
+
     // Whitelist Config
     bytes32 public whitelistMerkleRoot;
     uint256 public morphPriceWhitelist = 0 ether;
@@ -38,6 +78,13 @@ contract Morph is
     constructor() {
         _setDefaultRoyalty(msg.sender, 5_00); // 5.00%
         autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
+    }
+
+    function A_Message_From_Morph_Set(string memory _A_Message_From_Morph)
+        external
+        onlyOwner
+    {
+        A_Message_From_Morph = _A_Message_From_Morph;
     }
 
     /// @notice Purchase NFTs
