@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.17;
 
-import "erc721a@3.3.0/contracts/ERC721A.sol";
-// import "erc721a@3.3.0/contracts/ERC721A.sol";
 
+import "erc721a@4.2.3/contracts/ERC721A.sol";
+import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";    
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -13,9 +13,7 @@ interface OpenSea {
     function proxies(address) external view returns (address);
 }
 
-contract Sample is ERC721A("Sample", "NTO"), Ownable, ERC2981 {
-    using Strings for uint256;
-
+contract Sample is ERC721A("Sample", "NTO"), Ownable, ERC2981, DefaultOperatorFilterer {
     bool public revealed = false;
     string public notRevealedMetadataFolderIpfsLink;
     uint256 public maxMintAmount = 10;
@@ -65,7 +63,7 @@ contract Sample is ERC721A("Sample", "NTO"), Ownable, ERC2981 {
         if (revealed == false) return notRevealedMetadataFolderIpfsLink;
 
         string memory currentBaseURI = _baseURI();
-        return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), baseExtension)) : "";
+        return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI, _toString(tokenId), baseExtension)) : "";
     }
 
     //////////////////
@@ -162,6 +160,54 @@ contract NftWhitelistSaleMerkle is Sample {
 
     function setPresaleActiveTime(uint256 _presaleActiveTime) external onlyOwner {
         presaleActiveTime = _presaleActiveTime;
+    }
+
+    // implementing Operator Filter Registry
+    // https://opensea.io/blog/announcements/on-creator-fees
+    // https://github.com/ProjectOpenSea/operator-filter-registry#usage
+
+    function setApprovalForAll(address operator, bool approved)
+        public
+        virtual
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.setApprovalForAll(operator, approved);
+    }
+
+    function approve(address operator, uint256 tokenId)
+        public
+        payable
+        virtual
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.approve(operator, tokenId);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.transferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 }
 
