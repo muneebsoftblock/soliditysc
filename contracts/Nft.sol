@@ -2,8 +2,9 @@
 
 pragma solidity ^0.8.17;
 
-import "erc721a@4.2.3/contracts/ERC721A.sol";
-import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";
+import "erc721a/contracts/ERC721A.sol";
+// import "erc721a@4.2.3/contracts/ERC721A.sol";
+// import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -15,8 +16,8 @@ interface OpenSea {
 contract Sample is
     ERC721A("Sample", "NTO"),
     Ownable,
-    ERC2981,
-    DefaultOperatorFilterer
+    // DefaultOperatorFilterer,
+    ERC2981
 {
     bool public revealed = false;
     string public notRevealedMetadataFolderIpfsLink;
@@ -128,7 +129,7 @@ contract Sample is
                 ? string(
                     abi.encodePacked(
                         currentBaseURI,
-                        _toString(tokenId),
+                        "_toString(tokenId)",
                         baseExtension
                     )
                 )
@@ -261,49 +262,49 @@ contract NftWhitelistClaimMerkle is Sample {
     // https://opensea.io/blog/announcements/on-creator-fees
     // https://github.com/ProjectOpenSea/operator-filter-registry#usage
 
-    function setApprovalForAll(address operator, bool approved)
-        public
-        virtual
-        override
-        onlyAllowedOperatorApproval(operator)
-    {
-        super.setApprovalForAll(operator, approved);
-    }
+    // function setApprovalForAll(address operator, bool approved)
+    //     public
+    //     virtual
+    //     override
+    //     onlyAllowedOperatorApproval(operator)
+    // {
+    //     super.setApprovalForAll(operator, approved);
+    // }
 
-    function approve(address operator, uint256 tokenId)
-        public
-        payable
-        virtual
-        override
-        onlyAllowedOperatorApproval(operator)
-    {
-        super.approve(operator, tokenId);
-    }
+    // function approve(address operator, uint256 tokenId)
+    //     public
+    //     payable
+    //     virtual
+    //     override
+    //     onlyAllowedOperatorApproval(operator)
+    // {
+    //     super.approve(operator, tokenId);
+    // }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public payable virtual override onlyAllowedOperator(from) {
-        super.transferFrom(from, to, tokenId);
-    }
+    // function transferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId
+    // ) public payable virtual override onlyAllowedOperator(from) {
+    //     super.transferFrom(from, to, tokenId);
+    // }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public payable virtual override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId);
-    }
+    // function safeTransferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId
+    // ) public payable virtual override onlyAllowedOperator(from) {
+    //     super.safeTransferFrom(from, to, tokenId);
+    // }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) public payable virtual override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId, data);
-    }
+    // function safeTransferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId,
+    //     bytes memory data
+    // ) public payable virtual override onlyAllowedOperator(from) {
+    //     super.safeTransferFrom(from, to, tokenId, data);
+    // }
 }
 
 contract SampleContract is NftWhitelistClaimMerkle {}
