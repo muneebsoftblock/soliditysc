@@ -31,6 +31,7 @@ contract Sample is
 
     uint256 public claimSpotsSold = 0;
     uint256 public claimSpotsToSell = 5000;
+    uint256 public costPerClaim = 0.01 * 1e18;
     uint256 public maxMintClaimSpotAmount = 10;
     mapping(address => uint256) public claimSpotsBoughtBy;
     event PurchasedClaimSpot(address, uint256);
