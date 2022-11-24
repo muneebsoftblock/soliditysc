@@ -25,8 +25,12 @@ contract('Nft', async ([owner, client, parentCompany]) => {
       sortPairs: true,
     });
 
+    // setting lists on eth scan
+    await nft.setClaimList(0, tree[0].getHexRoot(), { from: owner });
+    await nft.setClaimList(1, tree[1].getHexRoot(), { from: owner });
+    await nft.setClaimList(2, tree[2].getHexRoot(), { from: owner });
+
     await nft.setClaimActiveTime(0);
-    await nft.setClaimList(tree[0].getHexRoot(), { from: owner });
     await nft.purchaseClaimSpot(1, tree[0].getHexProof(keccak256(client)), {
       value: toWei('0.09'),
       from: client,
