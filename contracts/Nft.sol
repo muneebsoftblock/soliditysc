@@ -51,7 +51,7 @@ contract Sample is
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
         require(
-            _mintAmount <= maxMintAmount,
+           _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
             "max mint amount per session exceeded"
         );
         require(
