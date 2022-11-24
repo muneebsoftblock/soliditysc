@@ -36,7 +36,7 @@ contract Sample is
     event PurchasedClaimSpot(address, uint256);
 
     uint256 public totalClaimSpotsSold;
-    uint256 public claimSpotMintActiveTime = 0;
+    uint256 public claimSpotMintActiveTime;
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
@@ -65,7 +65,7 @@ contract Sample is
 
     function purchaseClaimSpot(uint256 _mintAmount) external payable {
         require(_mintAmount > 0, "need to mint at least 1 spot");
-        require(msg.value == costPerNft * _mintAmount, "incorrect funds");
+        require(msg.value == costPerClaim * _mintAmount, "incorrect funds");
         require(
             block.timestamp > claimSpotMintActiveTime,
             "The Claim Spot Mint is paused"
@@ -154,6 +154,29 @@ contract Sample is
 
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
             _safeMint(_sendNftsTo[i], _howMany);
+    }
+
+    // setters
+    function setCostPerClaim(uint256 _costPerClaim) public onlyOwner {
+        costPerClaim = _costPerClaim;
+    }
+
+    function setClaimSpotsToSell(uint256 _claimSpotsToSell) public onlyOwner {
+        claimSpotsToSell = _claimSpotsToSell;
+    }
+
+    function setMaxMintClaimSpotAmount(uint256 _maxMintClaimSpotAmount)
+        public
+        onlyOwner
+    {
+        maxMintClaimSpotAmount = _maxMintClaimSpotAmount;
+    }
+
+    function setClaimSpotMintActiveTime(uint256 _claimSpotMintActiveTime)
+        public
+        onlyOwner
+    {
+        claimSpotMintActiveTime = _claimSpotMintActiveTime;
     }
 
     function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
