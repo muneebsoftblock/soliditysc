@@ -32,12 +32,13 @@ contract Sample is
 
     uint256 public claimSpotsSold = 0;
     uint256 public claimSpotsToSell = 5000;
+    uint256 public costPerClaim = 0.01 * 1e18;
     uint256 public maxMintClaimSpotAmount = 10;
     mapping(address => uint256) public claimSpotsBoughtBy;
     event PurchasedClaimSpot(address, uint256);
 
     uint256 public totalClaimSpotsSold;
-    uint256 public claimSpotMintActiveTime = 0;
+    uint256 public claimSpotMintActiveTime;
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
@@ -66,7 +67,7 @@ contract Sample is
 
     function purchaseClaimSpot(uint256 _mintAmount) external payable {
         require(_mintAmount > 0, "need to mint at least 1 spot");
-        require(msg.value == costPerNft * _mintAmount, "incorrect funds");
+        require(msg.value == costPerClaim * _mintAmount, "incorrect funds");
         require(
             block.timestamp > claimSpotMintActiveTime,
             "The Claim Spot Mint is paused"
