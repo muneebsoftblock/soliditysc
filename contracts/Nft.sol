@@ -25,7 +25,6 @@ contract Sample is
     uint256 public costPerNft = 0.015 * 1e18;
     uint256 public nftsForOwner = 50;
     string public metadataFolderIpfsLink;
-    uint256 constant presaleSupply = 300;
     string constant baseExtension = ".json";
     uint256 public publicmintActiveTime = 0;
 
@@ -266,7 +265,7 @@ contract NftWhitelistClaimMerkle is Sample {
         _setAux(msg.sender, 1); // 1 = Claim Used
     }
 
-    function setPresale(uint256 _rootNumber, bytes32 _claimList)
+    function setClaimList(uint256 _rootNumber, bytes32 _claimList)
         external
         onlyOwner
     {
