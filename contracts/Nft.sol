@@ -29,12 +29,20 @@ contract Sample is
     string constant baseExtension = ".json";
     uint256 public publicmintActiveTime = 0;
 
+    uint256 public claimSpotsSold = 0;
+    uint256 public claimSpotsToSell = 5000;
+    uint256 public maxMintClaimSpotAmount = 10;
+    mapping(address => uint256) public claimSpotsBoughtBy;
+    event PurchasedClaimSpot(address, uint256);
+
+    uint256 public totalClaimSpotsSold;
+    uint256 public claimSpotMintActiveTime = 0;
+
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
     }
 
-    // public
-    function purchaseTokens(uint256 _mintAmount) public payable {
+    function purchaseTokens(uint256 _mintAmount) external payable {
         require(
             block.timestamp > publicmintActiveTime,
             "the contract is paused"
@@ -46,12 +54,36 @@ contract Sample is
             "max mint amount per session exceeded"
         );
         require(
-            supply + _mintAmount + nftsForOwner <= maxSupply,
+            supply + _mintAmount + nftsForOwner + totalClaimSpotsSold <=
+                maxSupply,
             "max NFT limit exceeded"
         );
-        require(msg.value >= costPerNft * _mintAmount, "insufficient funds");
+        require(msg.value == costPerNft * _mintAmount, "insufficient funds");
 
         _safeMint(msg.sender, _mintAmount);
+    }
+
+    function purchaseClaimSpot(uint256 _mintAmount) external payable {
+        require(_mintAmount > 0, "need to mint at least 1 spot");
+        require(msg.value == costPerNft * _mintAmount, "incorrect funds");
+        require(
+            block.timestamp > claimSpotMintActiveTime,
+            "The Claim Spot Mint is paused"
+        );
+        require(
+            claimSpotsBoughtBy[msg.sender] + _mintAmount <=
+                maxMintClaimSpotAmount,
+            "max mint amount per session exceeded"
+        );
+        require(
+            claimSpotsSold + _mintAmount <= claimSpotsToSell,
+            "max mint amount per session exceeded"
+        );
+
+        claimSpotsBoughtBy[msg.sender] += _mintAmount;
+        claimSpotsSold += _mintAmount;
+
+        emit PurchasedClaimSpot(msg.sender, _mintAmount);
     }
 
     ///////////////////////////////////
@@ -167,7 +199,7 @@ contract Sample is
 
 contract NftWhitelistClaimMerkle is Sample {
     ///////////////////////////////
-    //    PRESALE CODE STARTS    //
+    //      CLAIM CODE STARTS    //
     ///////////////////////////////
 
     // multiple claim list
@@ -217,8 +249,12 @@ contract NftWhitelistClaimMerkle is Sample {
         claimList[_rootNumber] = _claimList;
     }
 
-    function setClaimActiveTime(uint256 _startTime) external onlyOwner {
+    function setClaimActiveTime(
+        uint256 _startTime,
+        uint256 _totalClaimSpotsSold
+    ) external onlyOwner {
         claimActiveTime = _startTime;
+        totalClaimSpotsSold = _totalClaimSpotsSold;
     }
 
     // implementing Operator Filter Registry
