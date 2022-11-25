@@ -26,17 +26,9 @@ contract Sample is
     uint256 public nftsForOwner = 50;
     string public metadataFolderIpfsLink;
     string constant baseExtension = ".json";
-    uint256 public publicmintActiveTime = 0;
-
-    uint256 public claimSpotsSold = 0;
-    uint256 public claimSpotsToSell = 5000;
-    uint256 public costPerClaim = 0.01 * 1e18;
-    uint256 public maxMintClaimSpotAmount = 10;
-    mapping(address => uint256) public claimSpotsBoughtBy;
-    event PurchasedClaimSpot(address, uint256);
+    uint256 public publicmintActiveTime = type(uint256).max;
 
     uint256 public totalClaimSpotsSold;
-    uint256 public claimSpotMintActiveTime;
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
@@ -63,28 +55,7 @@ contract Sample is
         _safeMint(msg.sender, _mintAmount);
     }
 
-    function purchaseClaimSpot(uint256 _mintAmount) external payable {
-        require(_mintAmount > 0, "need to mint at least 1 spot");
-        require(msg.value == costPerClaim * _mintAmount, "incorrect funds");
-        require(
-            block.timestamp > claimSpotMintActiveTime,
-            "The Claim Spot Mint is paused"
-        );
-        require(
-            claimSpotsBoughtBy[msg.sender] + _mintAmount <=
-                maxMintClaimSpotAmount,
-            "max mint amount per session exceeded"
-        );
-        require(
-            claimSpotsSold + _mintAmount <= claimSpotsToSell,
-            "max mint amount per session exceeded"
-        );
 
-        claimSpotsBoughtBy[msg.sender] += _mintAmount;
-        claimSpotsSold += _mintAmount;
-
-        emit PurchasedClaimSpot(msg.sender, _mintAmount);
-    }
 
     ///////////////////////////////////
     //       OVERRIDE CODE STARTS    //
@@ -157,27 +128,7 @@ contract Sample is
     }
 
     // setters
-    function setCostPerClaim(uint256 _costPerClaim) public onlyOwner {
-        costPerClaim = _costPerClaim;
-    }
-
-    function setClaimSpotsToSell(uint256 _claimSpotsToSell) public onlyOwner {
-        claimSpotsToSell = _claimSpotsToSell;
-    }
-
-    function setMaxMintClaimSpotAmount(uint256 _maxMintClaimSpotAmount)
-        public
-        onlyOwner
-    {
-        maxMintClaimSpotAmount = _maxMintClaimSpotAmount;
-    }
-
-    function setClaimSpotMintActiveTime(uint256 _claimSpotMintActiveTime)
-        public
-        onlyOwner
-    {
-        claimSpotMintActiveTime = _claimSpotMintActiveTime;
-    }
+   
 
     function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
         nftsForOwner = _newnftsForOwner;
@@ -330,3 +281,4 @@ contract NftWhitelistClaimMerkle is Sample {
 }
 
 contract SampleContract is NftWhitelistClaimMerkle {}
+
