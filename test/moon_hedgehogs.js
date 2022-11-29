@@ -1,50 +1,23 @@
-const MoonHedgehogs = artifacts.require('MoonHedgehogs');
+const AletheaNFT = artifacts.require('AletheaNFT');
+const AliERC20v2 = artifacts.require('AliERC20v2');
 
-contract('MoonHedgehogs', ([alice, bob, carol, owner]) => {
+contract('AletheaNFT', ([alice, bob, carol, owner]) => {
   it('should assert true', async () => {
-    const sc = await MoonHedgehogs.new({ from: owner });
+    //
 
-    const scOwner = await sc.owner();
-    const scAddr = sc.address;
-    console.log({ scOwner, scAddr });
+    const nft = await AletheaNFT.new('name', 'symbol', { from: owner }); // deploy smartContract
+    const coin = await AliERC20v2.new(owner, { from: owner }); // deploy smartContract
 
-    await sc.setSaleActiveTime(0, 0, { from: owner });
-    await sc.setFirstFreeMints(2, { from: owner });
-    await sc.setMaxHedgehogsPerWallet(5, 0, { from: owner });
+    await nft.mint(alice, 0, { from: owner }); // write api
+    const chickenRole = await coin.userRoles(owner); // read api
+    console.log({ roles: ''+chickenRole });
 
-    {
-      const qty = 1;
-      const from = alice;
-      const price = '' + (await sc.getPrice(qty, { from }));
-      console.log({ price });
-      await sc.buyHedgehogs(qty, {
-        from,
-        value: price,
-      });
-    }
-    {
-      const qty = 3;
-      const from = bob;
-      const price = '' + (await sc.getPrice(qty, { from }));
-      console.log({ price });
-      await sc.buyHedgehogs(qty, {
-        from,
-        value: price,
-      });
-    }
-    {
-      const qty = 5;
-      const from = carol;
-      const price = '' + (await sc.getPrice(qty, { from }));
-      console.log({ price });
-      await sc.buyHedgehogs(qty, {
-        from,
-        value: price,
-      });
-    }
+    // await coin.transferFrom(owner, alice, '10000', { from: owner }); // write api
 
-    await sc.withdraw({ from: owner });
-
-    return assert.isTrue(true);
+    //
   });
 });
+
+// const smartContractOwner = await s.owner(); // read api
+// await s.mint(alice, 0, { from: owner, value: '0' }); // write api
+// const smartContractAddress = s.address; // util read address
