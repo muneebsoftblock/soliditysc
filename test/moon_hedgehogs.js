@@ -10,7 +10,7 @@ contract('AletheaNFT', ([alice, bob, carol, owner]) => {
 
     await nft.mint(alice, 0, { from: owner }); // write api
     const chickenRole = await coin.userRoles(owner); // read api
-    console.log({ roles: ''+chickenRole });
+    console.log({ roles: '' + chickenRole });
 
     // await coin.transferFrom(owner, alice, '10000', { from: owner }); // write api
 
