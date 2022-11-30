@@ -51,7 +51,7 @@ const signEIP712 = (domainSeparator, typeHash, types, parameters, privateKey) =>
   );
 
   console.log(typeof digest);
-  return ecsign(new Uint8Array(digest), new Uint8Array(privateKey));
+  return ecSign(digest, privateKey);
 };
 
 // ---- THE FOLLOWING CODE WAS COPIED FROM THE COINBASE STABLECOIN TESTS ----
