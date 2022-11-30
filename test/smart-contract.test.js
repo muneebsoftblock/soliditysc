@@ -3,54 +3,86 @@ const { ecsign } = require('ethereumjs-util');
 const AletheaNFT = artifacts.require('AletheaNFT');
 const AliERC20v2 = artifacts.require('AliERC20v2');
 
-contract('AletheaNFT', ([alice, bob, carol, owner]) => {
+contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
   it('should assert true', async () => {
     //
+    const nft = await AletheaNFT.new('name', 'symbol', { from: TREASURY_WALLET }); // deploy smartContract
+    await nft.updateFeatures(65535, { from: TREASURY_WALLET }); // write api // enable transfers, permits
+    const nftId = 0; // nft id AvailableForMint
+    await nft.mint(USER_WALLET, nftId, { from: TREASURY_WALLET }); // write api
 
-    const nft = await AletheaNFT.new('name', 'symbol', { from: owner }); // deploy smartContract
-    const coin = await AliERC20v2.new(owner, { from: owner }); // deploy smartContract
-
-    await nft.mint(alice, 0, { from: owner }); // write api
-
-    console.log(alice);
-    console.log('0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8');
-    const alicePrivateKey = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
-
-    await coin.updateFeatures('65535', { from: owner }); // write api
-    await coin.transfer(alice, '10000', { from: owner }); // write api
-    await coin.transferFrom(owner, alice, '10000', { from: owner }); // write api
-
-    await coin.transfer(carol, '10000', { from: alice }); // write api
+    assert.equal(USER_WALLET, '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8');
+    const USER_WALLET_PV_KEY = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
 
     const DOMAIN_SEPARATOR = await nft.DOMAIN_SEPARATOR();
-    console.log({ DOMAIN_SEPARATOR });
-
     const PERMIT_FOR_ALL_TYPEHASH = await nft.PERMIT_FOR_ALL_TYPEHASH();
-    console.log({ PERMIT_FOR_ALL_TYPEHASH });
+    const permitNonces = await nft.permitNonces(USER_WALLET);
+    const expiry = Math.floor(Date.now() / 1000 + 86400);
 
-    const permitNonces = 1 + Number('' + (await nft.permitNonces(alice))); // +1 to get next nonce to use
-    console.log({ permitNonces });
-
-    // signEIP712(domainSeparator, typeHash, types, parameters, USER_KEY)
-    const signature = signEIP712(
+    const sign = signEIP712(
       DOMAIN_SEPARATOR,
       PERMIT_FOR_ALL_TYPEHASH,
       ['address', 'address', 'bool', 'uint256', 'uint256'],
-      [alice, owner, true, permitNonces, Math.floor(Date.now() / 1000 + 86400)],
-      alicePrivateKey,
+      [USER_WALLET, TREASURY_WALLET, true, permitNonces, expiry],
+      USER_WALLET_PV_KEY,
     );
-    console.log({ signature });
+
+    await nft.permitForAll(USER_WALLET, TREASURY_WALLET, true, expiry, sign.v, sign.r, sign.s, {
+      from: TREASURY_WALLET,
+    });
+
+    await nft.transferFrom(USER_WALLET, THIRD_PARTY_WALLET, nftId, { from: TREASURY_WALLET }); // special call // write api
 
     //
   });
+  it('should assert true', async () => {
+    //
+    const coin = await AliERC20v2.new(TREASURY_WALLET, { from: TREASURY_WALLET }); // deploy smartContract
+    await coin.updateFeatures(65535, { from: TREASURY_WALLET }); // write api // enable transfers, permits
+    const qty = '100';
+    await coin.transfer(USER_WALLET, qty, { from: TREASURY_WALLET }); // write api
+
+    assert.equal(USER_WALLET, '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8');
+    const USER_WALLET_PV_KEY = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
+    const DOMAIN_SEPARATOR = await coin.DOMAIN_SEPARATOR();
+    const TRANSFER_WITH_AUTHORIZATION_TYPEHASH = await coin.TRANSFER_WITH_AUTHORIZATION_TYPEHASH();
+    // const nonce = DOMAIN_SEPARATOR;
+    const nonce = web3.utils.randomHex(32);
+    const nonceUsed = await coin.authorizationState(USER_WALLET, DOMAIN_SEPARATOR);
+    const now = Math.floor(Date.now() / 1000);
+    const issue = now - 10,
+      expiry = now + 60 * 60;
+
+    if (nonceUsed) {
+      console.log('nonce already used try again');
+      return;
+    }
+
+    const sign = signEIP712(
+      DOMAIN_SEPARATOR,
+      TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
+      ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes32'],
+      [USER_WALLET, TREASURY_WALLET, '2', issue, expiry, nonce],
+      USER_WALLET_PV_KEY,
+    );
+
+    const signer = await coin.transferWithAuthorization2(USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
+      from: TREASURY_WALLET,
+    });
+
+    console.log({ signer });
+
+    await coin.transferWithAuthorization(USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
+      from: TREASURY_WALLET,
+    });
+  });
 });
 
+// util
 const signEIP712 = (domainSeparator, typeHash, types, parameters, privateKey) => {
   const digest = web3.utils.keccak256(
     '0x1901' + strip0x(domainSeparator) + strip0x(web3.utils.keccak256(web3.eth.abi.encodeParameters(['bytes32', ...types], [typeHash, ...parameters]))),
   );
-
-  console.log(typeof digest);
   return ecSign(digest, privateKey);
 };
 
