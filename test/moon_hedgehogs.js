@@ -30,3 +30,4 @@ contract('AletheaNFT', ([alice, bob, carol, owner]) => {
 // const smartContractOwner = await s.owner(); // read api
 // await s.mint(alice, 0, { from: owner, value: '0' }); // write api
 // const smartContractAddress = s.address; // util read address
+// console.log({ acc: await web3.eth.getAccounts() }); // util, get web3 object injected by default in truffle framework
