@@ -9,12 +9,21 @@ contract('AletheaNFT', ([alice, bob, carol, owner]) => {
     const coin = await AliERC20v2.new(owner, { from: owner }); // deploy smartContract
 
     await nft.mint(alice, 0, { from: owner }); // write api
-    const chickenRole = await coin.userRoles(owner); // read api
-    console.log({ roles: '' + chickenRole });
 
-    // await coin.transferFrom(owner, alice, '10000', { from: owner }); // write api
+    await coin.updateFeatures('65535', { from: owner }); // write api
+    await coin.transfer(alice, '10000', { from: owner }); // write api
+    await coin.transferFrom(owner, alice, '10000', { from: owner }); // write api
 
-    //
+    await coin.transfer(carol, '10000', { from: alice }); // write api
+
+    const DOMAIN_SEPARATOR = await nft.DOMAIN_SEPARATOR();
+    console.log({ DOMAIN_SEPARATOR });
+
+    const PERMIT_FOR_ALL_TYPEHASH = await nft.PERMIT_FOR_ALL_TYPEHASH();
+    console.log({ PERMIT_FOR_ALL_TYPEHASH });
+
+    const permitNonces = '' + (await nft.permitNonces(alice));
+    console.log({ permitNonces });
   });
 });
 
