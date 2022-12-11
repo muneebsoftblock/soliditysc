@@ -38,10 +38,9 @@ contract Sample is
     string public notRevealedMetadataFolderIpfsLink;
     uint256 public maxMintAmount = 10;
     uint256 public maxSupply = 5000;
-    uint256 public costPerNft = 0.015 * 1e18;
-    uint256 public nftsForOwner = 50;
+    uint256 public costPerNft = 0.77 * 1e18;
+    uint256 public reservedNfts = 500;
     string public metadataFolderIpfsLink;
-    uint256 constant whitelistSupply = 300;
     string constant baseExtension = ".json";
     uint256 public publicmintActiveTime = type(uint256).max;
     //
@@ -58,7 +57,7 @@ contract Sample is
     // MUST FILL THIS VALUE
     // test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, 3 claims possible
     // test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
-    uint256 public claimSpotsTotalSold = 500;
+    uint256 public claimSpotsTotalSold = 2348;
     uint256 public claimSpotsTotalClaimed = 0;
 
     //
@@ -94,7 +93,7 @@ contract Sample is
         uint256 claimSpotsAvailable = claimSpotsTotalSold -
             claimSpotsTotalClaimed;
         require(
-            supply + _mintAmount + nftsForOwner + claimSpotsAvailable <=
+            supply + _mintAmount + reservedNfts + claimSpotsAvailable <=
                 maxSupply,
             "max NFT limit exceeded"
         );
@@ -156,7 +155,8 @@ contract Sample is
     //  ONLY OWNER  //
     //////////////////
 
-    function withdraw() public payable onlyOwner {
+    /// @notice test before use
+    function withdraw() public onlyOwner {
         (bool success, ) = payable(msg.sender).call{
             value: address(this).balance
         }("");
@@ -167,18 +167,21 @@ contract Sample is
         external
         onlyOwner
     {
-        nftsForOwner -= _sendNftsTo.length * _howMany;
+        reservedNfts -= _sendNftsTo.length * _howMany;
 
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
             _safeMint(_sendNftsTo[i], _howMany);
     }
 
-    function setClaimSpotsTotalClaimed(uint256 _claimSpotsTotalClaimed) public onlyOwner {
+    function setClaimSpotsTotalClaimed(uint256 _claimSpotsTotalClaimed)
+        public
+        onlyOwner
+    {
         claimSpotsTotalClaimed = _claimSpotsTotalClaimed;
     }
 
-    function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
-        nftsForOwner = _newnftsForOwner;
+    function setReservedNfts(uint256 _newreservedNfts) public onlyOwner {
+        reservedNfts = _newreservedNfts;
     }
 
     function setDefaultRoyalty(address _receiver, uint96 _feeNumerator)
@@ -280,6 +283,10 @@ contract NftWhitelistSaleMerkle is Sample {
     mapping(uint256 => bytes32) public whitelistMerkleRoots;
     uint256 public whitelistActiveTime = type(uint256).max;
 
+    function isWLClaimed(address _owner) private view returns (uint256) {
+        return _getAux(_owner);
+    }
+
     function _inWhitelist(
         address _owner,
         bytes32[] memory _proof,
@@ -298,7 +305,7 @@ contract NftWhitelistSaleMerkle is Sample {
         bytes32[] calldata _proof
     ) external payable {
         require(
-            totalSupply() + _claimAmount + nftsForOwner <= maxSupply,
+            totalSupply() + _claimAmount + reservedNfts <= maxSupply,
             "mint limit exceeded"
         );
         require(block.timestamp > whitelistActiveTime, "WL not active");
@@ -309,7 +316,6 @@ contract NftWhitelistSaleMerkle is Sample {
         _safeMint(msg.sender, _claimAmount);
     }
 
-    // TODO: add loop, values 1 to 20, expect unique addresses in all lists
     function setWhitelist(uint256 _rootNumber, bytes32 _whitelistMerkleRoot)
         external
         onlyOwner
