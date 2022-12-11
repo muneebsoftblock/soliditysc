@@ -4,16 +4,17 @@ const AletheaNFT = artifacts.require('AletheaNFT');
 const AliERC20v2 = artifacts.require('AliERC20v2');
 
 contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
-  it('should assert true', async () => {
+  it('NFT signEIP712', async () => {
     //
     const nft = await AletheaNFT.new('name', 'symbol', { from: TREASURY_WALLET }); // deploy smartContract
     await nft.updateFeatures(65535, { from: TREASURY_WALLET }); // write api // enable transfers, permits
-    const nftId = 0; // nft id AvailableForMint
+    
+    const nftId = 0; // nft id AvailableForMint // get from DB
     await nft.mint(USER_WALLET, nftId, { from: TREASURY_WALLET }); // write api
 
     assert.equal(USER_WALLET, '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8');
     const USER_WALLET_PV_KEY = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
-
+    
     const DOMAIN_SEPARATOR = await nft.DOMAIN_SEPARATOR();
     const PERMIT_FOR_ALL_TYPEHASH = await nft.PERMIT_FOR_ALL_TYPEHASH();
     const permitNonces = await nft.permitNonces(USER_WALLET);
@@ -35,7 +36,7 @@ contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
 
     //
   });
-  it('should assert true', async () => {
+  it('ERC20 signEIP712', async () => {
     //
     const coin = await AliERC20v2.new(TREASURY_WALLET, { from: TREASURY_WALLET }); // deploy smartContract
     await coin.updateFeatures(65535, { from: TREASURY_WALLET }); // write api // enable transfers, permits
@@ -46,7 +47,6 @@ contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
     const USER_WALLET_PV_KEY = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
     const DOMAIN_SEPARATOR = await coin.DOMAIN_SEPARATOR();
     const TRANSFER_WITH_AUTHORIZATION_TYPEHASH = await coin.TRANSFER_WITH_AUTHORIZATION_TYPEHASH();
-    // const nonce = DOMAIN_SEPARATOR;
     const nonce = web3.utils.randomHex(32);
     const nonceUsed = await coin.authorizationState(USER_WALLET, DOMAIN_SEPARATOR);
     const now = Math.floor(Date.now() / 1000);
@@ -62,15 +62,9 @@ contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
       DOMAIN_SEPARATOR,
       TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
       ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes32'],
-      [USER_WALLET, TREASURY_WALLET, '2', issue, expiry, nonce],
+      [USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce],
       USER_WALLET_PV_KEY,
     );
-
-    const signer = await coin.transferWithAuthorization2(USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
-      from: TREASURY_WALLET,
-    });
-
-    console.log({ signer });
 
     await coin.transferWithAuthorization(USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
       from: TREASURY_WALLET,
@@ -107,6 +101,7 @@ function ecSign(digest, privateKey) {
   return { v, r: hexStringFromBuffer(r), s: hexStringFromBuffer(s) };
 }
 
+// util code for syntax
 // const smartContractOwner = await s.owner(); // read api
 // await s.mint(alice, 0, { from: owner, value: '0' }); // write api
 // const smartContractAddress = s.address; // util read address
