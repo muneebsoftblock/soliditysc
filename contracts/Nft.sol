@@ -1,5 +1,19 @@
 // SPDX-License-Identifier: MIT
 
+// 
+// 
+// 
+// 
+// 
+// MUST FILL THIS VALUE
+// 
+// 
+// 
+// 
+// 
+// MUST FILL THIS VALUE claimSpotsTotalSold = 0;
+
+
 pragma solidity ^0.8.17;
 
 import "erc721a@4.2.3/contracts/ERC721A.sol";
@@ -25,16 +39,43 @@ contract Sample is
     uint256 public costPerNft = 0.015 * 1e18;
     uint256 public nftsForOwner = 50;
     string public metadataFolderIpfsLink;
+    uint256 constant presaleSupply = 300;
     string constant baseExtension = ".json";
-    uint256 public publicmintActiveTime = type(uint256).max;
+    uint256 public publicmintActiveTime = 0;
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// MUST FILL THIS VALUE
 
-    uint256 public totalClaimSpotsSold;
+    uint256 public claimSpotsTotalSold = 0;
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
     }
 
-    function purchaseTokens(uint256 _mintAmount) external payable {
+    // public
+    function purchaseTokens(uint256 _mintAmount) public payable {
         require(
             block.timestamp > publicmintActiveTime,
             "the contract is paused"
@@ -42,20 +83,17 @@ contract Sample is
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
         require(
-           _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
+            _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
             "max mint amount per session exceeded"
         );
         require(
-            supply + _mintAmount + nftsForOwner + totalClaimSpotsSold <=
-                maxSupply,
+            supply + _mintAmount + nftsForOwner + claimSpotsTotalSold <= maxSupply,
             "max NFT limit exceeded"
         );
         require(msg.value == costPerNft * _mintAmount, "insufficient funds");
 
         _safeMint(msg.sender, _mintAmount);
     }
-
-
 
     ///////////////////////////////////
     //       OVERRIDE CODE STARTS    //
@@ -127,9 +165,6 @@ contract Sample is
             _safeMint(_sendNftsTo[i], _howMany);
     }
 
-    // setters
-   
-
     function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
         nftsForOwner = _newnftsForOwner;
     }
@@ -171,19 +206,12 @@ contract Sample is
     }
 }
 
-contract NftWhitelistClaimMerkle is Sample {
-    ///////////////////////////////
-    //      CLAIM CODE STARTS    //
-    ///////////////////////////////
-
-    // multiple claim list
-    // 1 claim available => encoded list 1
-    // 2 claim available => encoded list 2
-    // 3 claim available => encoded list 3
-    // ...
-    mapping(uint256 => bytes32) public claimList;
-
-    uint256 public claimActiveTime = type(uint256).max;
+contract NftWhitelistSaleMerkle is Sample {
+    // multiple presale configs
+    mapping(uint256 => uint256) public maxMintPresales;
+    mapping(uint256 => uint256) public itemPricePresales;
+    mapping(uint256 => bytes32) public whitelistMerkleRoots;
+    uint256 public presaleActiveTime = type(uint256).max;
 
     function _inWhitelist(
         address _owner,
@@ -193,42 +221,50 @@ contract NftWhitelistClaimMerkle is Sample {
         return
             MerkleProof.verify(
                 _proof,
-                claimList[_rootNumber],
+                whitelistMerkleRoots[_rootNumber],
                 keccak256(abi.encodePacked(_owner))
             );
     }
 
-    function claimNft(uint256 _howMany, bytes32[] calldata _proof)
-        external
-        payable
-    {
+    function purchaseTokensWhitelist(
+        uint256 _howMany,
+        bytes32[] calldata _proof,
+        uint256 _rootNumber
+    ) external payable {
+        require(block.timestamp > presaleActiveTime, "Presale is not active");
         require(
-            totalSupply() + _howMany + nftsForOwner <= maxSupply,
-            "Max NFT limit exceeded"
+            _inWhitelist(msg.sender, _proof, _rootNumber),
+            "You are not in presale"
         );
         require(
-            _inWhitelist(msg.sender, _proof, _howMany),
-            "You are not in claim list"
+            msg.value == _howMany * itemPricePresales[_rootNumber],
+            "Try to send more ETH"
         );
-        require(block.timestamp > claimActiveTime, "Claim is not active");
-        require(_getAux(msg.sender) == 0, "Already claimed"); // 0 = Claim Available
+        require(
+            _numberMinted(msg.sender) + _howMany <=
+                maxMintPresales[_rootNumber],
+            "Purchase exceeds max allowed"
+        );
+
         _safeMint(msg.sender, _howMany);
-        _setAux(msg.sender, 1); // 1 = Claim Used
     }
 
-    function setClaimList(uint256 _rootNumber, bytes32 _claimList)
+    function setPresale(
+        uint256 _rootNumber,
+        bytes32 _whitelistMerkleRoot,
+        uint256 _maxMintPresales,
+        uint256 _itemPricePresale
+    ) external onlyOwner {
+        maxMintPresales[_rootNumber] = _maxMintPresales;
+        itemPricePresales[_rootNumber] = _itemPricePresale;
+        whitelistMerkleRoots[_rootNumber] = _whitelistMerkleRoot;
+    }
+
+    function setPresaleActiveTime(uint256 _presaleActiveTime)
         external
         onlyOwner
     {
-        claimList[_rootNumber] = _claimList;
-    }
-
-    function setClaimActiveTime(
-        uint256 _startTime,
-        uint256 _totalClaimSpotsSold
-    ) external onlyOwner {
-        claimActiveTime = _startTime;
-        totalClaimSpotsSold = _totalClaimSpotsSold;
+        presaleActiveTime = _presaleActiveTime;
     }
 
     // implementing Operator Filter Registry
@@ -280,5 +316,4 @@ contract NftWhitelistClaimMerkle is Sample {
     }
 }
 
-contract SampleContract is NftWhitelistClaimMerkle {}
-
+contract SampleContract is NftWhitelistSaleMerkle {}
