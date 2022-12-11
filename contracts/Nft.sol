@@ -283,7 +283,7 @@ contract NftWhitelistSaleMerkle is Sample {
     mapping(uint256 => bytes32) public whitelistMerkleRoots;
     uint256 public whitelistActiveTime = type(uint256).max;
 
-    function isWLClaimed(address _owner) private view returns (uint256) {
+    function isWLClaimed(address _owner) external view returns (uint256) {
         return _getAux(_owner);
     }
 
