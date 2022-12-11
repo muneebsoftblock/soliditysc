@@ -43,7 +43,7 @@ contract Sample is
     string public metadataFolderIpfsLink;
     uint256 constant whitelistSupply = 300;
     string constant baseExtension = ".json";
-    uint256 public publicmintActiveTime = 0;
+    uint256 public publicmintActiveTime = type(uint256).max;
     //
     //
     //
