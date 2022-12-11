@@ -53,8 +53,10 @@ contract Sample is
     //
     //
     // MUST FILL THIS VALUE
-
+    // test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, 3 claims possible
+    // test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
     uint256 public claimSpotsTotalSold = 0;
+    uint256 public claimSpotsTotalClaimed = 0;
 
     //
     //
@@ -86,8 +88,10 @@ contract Sample is
             _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
             "max mint amount per session exceeded"
         );
+        uint256 claimSpotsAvailable = claimSpotsTotalSold -
+            claimSpotsTotalClaimed;
         require(
-            supply + _mintAmount + nftsForOwner + claimSpotsTotalSold <=
+            supply + _mintAmount + nftsForOwner + claimSpotsAvailable <=
                 maxSupply,
             "max NFT limit exceeded"
         );
@@ -257,8 +261,6 @@ contract Sample is
 
 contract NftWhitelistSaleMerkle is Sample {
     // multiple whitelist configs
-    mapping(uint256 => uint256) public maxMintWhitelists;
-    mapping(uint256 => uint256) public itemPriceWhitelists;
     mapping(uint256 => bytes32) public whitelistMerkleRoots;
     uint256 public whitelistActiveTime = type(uint256).max;
 
@@ -277,9 +279,10 @@ contract NftWhitelistSaleMerkle is Sample {
 
     function purchaseTokensWhitelist(
         uint256 _howMany,
-        bytes32[] calldata _proof,
-        uint256 _rootNumber
+        bytes32[] calldata _proof
     ) external payable {
+        uint256 _rootNumber = _howMany;
+
         require(
             block.timestamp > whitelistActiveTime,
             "Whitelist is not active"
@@ -288,27 +291,21 @@ contract NftWhitelistSaleMerkle is Sample {
             _inWhitelist(msg.sender, _proof, _rootNumber),
             "You are not in whitelist"
         );
+
         require(
-            msg.value == _howMany * itemPriceWhitelists[_rootNumber],
-            "Try to send more ETH"
-        );
-        require(
-            _numberMinted(msg.sender) + _howMany <=
-                maxMintWhitelists[_rootNumber],
+            _numberMinted(msg.sender) + _howMany <= _howMany,
             "Purchase exceeds max allowed"
         );
+        claimSpotsTotalClaimed += _howMany;
 
         _safeMint(msg.sender, _howMany);
     }
 
-    function setWhitelist(
-        uint256 _rootNumber,
-        bytes32 _whitelistMerkleRoot,
-        uint256 _maxMintWhitelists,
-        uint256 _itemPriceWhitelist
-    ) external onlyOwner {
-        maxMintWhitelists[_rootNumber] = _maxMintWhitelists;
-        itemPriceWhitelists[_rootNumber] = _itemPriceWhitelist;
+    // TODO: add loop
+    function setWhitelist(uint256 _rootNumber, bytes32 _whitelistMerkleRoot)
+        external
+        onlyOwner
+    {
         whitelistMerkleRoots[_rootNumber] = _whitelistMerkleRoot;
     }
 
