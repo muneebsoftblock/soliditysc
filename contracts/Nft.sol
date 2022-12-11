@@ -6,8 +6,8 @@
 //
 //
 // MUST FILL THIS VALUE
-// test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, 3 claims possible
-// test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
+// test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, tested left remain right 3 claims possible
+// remain, test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
 
 //
 //
