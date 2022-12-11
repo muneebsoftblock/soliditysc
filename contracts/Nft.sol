@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-// 
-// 
-// 
-// 
-// 
+//
+//
+//
+//
+//
 // MUST FILL THIS VALUE
-// 
-// 
-// 
-// 
-// 
+//
+//
+//
+//
+//
 // MUST FILL THIS VALUE claimSpotsTotalSold = 0;
-
 
 pragma solidity ^0.8.17;
 
@@ -39,36 +38,37 @@ contract Sample is
     uint256 public costPerNft = 0.015 * 1e18;
     uint256 public nftsForOwner = 50;
     string public metadataFolderIpfsLink;
-    uint256 constant presaleSupply = 300;
+    uint256 constant whitelistSupply = 300;
     string constant baseExtension = ".json";
     uint256 public publicmintActiveTime = 0;
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// MUST FILL THIS VALUE
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    // MUST FILL THIS VALUE
 
     uint256 public claimSpotsTotalSold = 0;
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
+
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
@@ -87,7 +87,8 @@ contract Sample is
             "max mint amount per session exceeded"
         );
         require(
-            supply + _mintAmount + nftsForOwner + claimSpotsTotalSold <= maxSupply,
+            supply + _mintAmount + nftsForOwner + claimSpotsTotalSold <=
+                maxSupply,
             "max NFT limit exceeded"
         );
         require(msg.value == costPerNft * _mintAmount, "insufficient funds");
@@ -204,68 +205,6 @@ contract Sample is
     function setSaleActiveTime(uint256 _publicmintActiveTime) public onlyOwner {
         publicmintActiveTime = _publicmintActiveTime;
     }
-}
-
-contract NftWhitelistSaleMerkle is Sample {
-    // multiple presale configs
-    mapping(uint256 => uint256) public maxMintPresales;
-    mapping(uint256 => uint256) public itemPricePresales;
-    mapping(uint256 => bytes32) public whitelistMerkleRoots;
-    uint256 public presaleActiveTime = type(uint256).max;
-
-    function _inWhitelist(
-        address _owner,
-        bytes32[] memory _proof,
-        uint256 _rootNumber
-    ) private view returns (bool) {
-        return
-            MerkleProof.verify(
-                _proof,
-                whitelistMerkleRoots[_rootNumber],
-                keccak256(abi.encodePacked(_owner))
-            );
-    }
-
-    function purchaseTokensWhitelist(
-        uint256 _howMany,
-        bytes32[] calldata _proof,
-        uint256 _rootNumber
-    ) external payable {
-        require(block.timestamp > presaleActiveTime, "Presale is not active");
-        require(
-            _inWhitelist(msg.sender, _proof, _rootNumber),
-            "You are not in presale"
-        );
-        require(
-            msg.value == _howMany * itemPricePresales[_rootNumber],
-            "Try to send more ETH"
-        );
-        require(
-            _numberMinted(msg.sender) + _howMany <=
-                maxMintPresales[_rootNumber],
-            "Purchase exceeds max allowed"
-        );
-
-        _safeMint(msg.sender, _howMany);
-    }
-
-    function setPresale(
-        uint256 _rootNumber,
-        bytes32 _whitelistMerkleRoot,
-        uint256 _maxMintPresales,
-        uint256 _itemPricePresale
-    ) external onlyOwner {
-        maxMintPresales[_rootNumber] = _maxMintPresales;
-        itemPricePresales[_rootNumber] = _itemPricePresale;
-        whitelistMerkleRoots[_rootNumber] = _whitelistMerkleRoot;
-    }
-
-    function setPresaleActiveTime(uint256 _presaleActiveTime)
-        external
-        onlyOwner
-    {
-        presaleActiveTime = _presaleActiveTime;
-    }
 
     // implementing Operator Filter Registry
     // https://opensea.io/blog/announcements/on-creator-fees
@@ -313,6 +252,71 @@ contract NftWhitelistSaleMerkle is Sample {
         bytes memory data
     ) public payable virtual override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
+    }
+}
+
+contract NftWhitelistSaleMerkle is Sample {
+    // multiple whitelist configs
+    mapping(uint256 => uint256) public maxMintWhitelists;
+    mapping(uint256 => uint256) public itemPriceWhitelists;
+    mapping(uint256 => bytes32) public whitelistMerkleRoots;
+    uint256 public whitelistActiveTime = type(uint256).max;
+
+    function _inWhitelist(
+        address _owner,
+        bytes32[] memory _proof,
+        uint256 _rootNumber
+    ) private view returns (bool) {
+        return
+            MerkleProof.verify(
+                _proof,
+                whitelistMerkleRoots[_rootNumber],
+                keccak256(abi.encodePacked(_owner))
+            );
+    }
+
+    function purchaseTokensWhitelist(
+        uint256 _howMany,
+        bytes32[] calldata _proof,
+        uint256 _rootNumber
+    ) external payable {
+        require(
+            block.timestamp > whitelistActiveTime,
+            "Whitelist is not active"
+        );
+        require(
+            _inWhitelist(msg.sender, _proof, _rootNumber),
+            "You are not in whitelist"
+        );
+        require(
+            msg.value == _howMany * itemPriceWhitelists[_rootNumber],
+            "Try to send more ETH"
+        );
+        require(
+            _numberMinted(msg.sender) + _howMany <=
+                maxMintWhitelists[_rootNumber],
+            "Purchase exceeds max allowed"
+        );
+
+        _safeMint(msg.sender, _howMany);
+    }
+
+    function setWhitelist(
+        uint256 _rootNumber,
+        bytes32 _whitelistMerkleRoot,
+        uint256 _maxMintWhitelists,
+        uint256 _itemPriceWhitelist
+    ) external onlyOwner {
+        maxMintWhitelists[_rootNumber] = _maxMintWhitelists;
+        itemPriceWhitelists[_rootNumber] = _itemPriceWhitelist;
+        whitelistMerkleRoots[_rootNumber] = _whitelistMerkleRoot;
+    }
+
+    function setWhitelistActiveTime(uint256 _whitelistActiveTime)
+        external
+        onlyOwner
+    {
+        whitelistActiveTime = _whitelistActiveTime;
     }
 }
 
