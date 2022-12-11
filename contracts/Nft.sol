@@ -6,6 +6,9 @@
 //
 //
 // MUST FILL THIS VALUE
+// test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, 3 claims possible
+// test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
+
 //
 //
 //
@@ -55,7 +58,7 @@ contract Sample is
     // MUST FILL THIS VALUE
     // test with small number max sup 10, claim spots sold = 3, max nomal mint till 7 then err, 3 claims possible
     // test with small number max sup 10, claim spots sold = 3, 3 claims possible, then mint 7
-    uint256 public claimSpotsTotalSold = 0;
+    uint256 public claimSpotsTotalSold = 500;
     uint256 public claimSpotsTotalClaimed = 0;
 
     //
@@ -260,7 +263,16 @@ contract Sample is
 }
 
 contract NftWhitelistSaleMerkle is Sample {
-    // multiple whitelist configs
+    ///////////////////////////////
+    //      CLAIM CODE STARTS    //
+    ///////////////////////////////
+
+    // multiple claim list
+    // merkle list 1 => 1 claim available
+    // merkle list 2 => 2 claim available
+    // merkle list 3 => 3 claim available
+    // and so on...
+
     mapping(uint256 => bytes32) public whitelistMerkleRoots;
     uint256 public whitelistActiveTime = type(uint256).max;
 
@@ -278,35 +290,39 @@ contract NftWhitelistSaleMerkle is Sample {
     }
 
     function purchaseTokensWhitelist(
-        uint256 _howMany,
+        uint256 _claimAmount,
         bytes32[] calldata _proof
     ) external payable {
-        uint256 _rootNumber = _howMany;
-
         require(
-            block.timestamp > whitelistActiveTime,
-            "Whitelist is not active"
+            totalSupply() + _claimAmount + nftsForOwner <= maxSupply,
+            "mint limit exceeded"
         );
-        require(
-            _inWhitelist(msg.sender, _proof, _rootNumber),
-            "You are not in whitelist"
-        );
-
-        require(
-            _numberMinted(msg.sender) + _howMany <= _howMany,
-            "Purchase exceeds max allowed"
-        );
-        claimSpotsTotalClaimed += _howMany;
-
-        _safeMint(msg.sender, _howMany);
+        require(block.timestamp > whitelistActiveTime, "WL not active");
+        require(_inWhitelist(msg.sender, _proof, _claimAmount), "Not in WL");
+        require(_getAux(msg.sender) == 0, "Already claimed"); // 0 = Claim Available
+        claimSpotsTotalClaimed += _claimAmount;
+        _setAux(msg.sender, 1);
+        _safeMint(msg.sender, _claimAmount);
     }
 
-    // TODO: add loop
+    // TODO: add loop, values 1 to 20, expect unique addresses in all lists
     function setWhitelist(uint256 _rootNumber, bytes32 _whitelistMerkleRoot)
         external
         onlyOwner
     {
         whitelistMerkleRoots[_rootNumber] = _whitelistMerkleRoot;
+    }
+
+    function setAllWhitelists(bytes32[] calldata _whitelistMerkleRoots)
+        external
+        onlyOwner
+    {
+        for (uint256 i = 0; i < _whitelistMerkleRoots.length; i++)
+            whitelistMerkleRoots[i + 1] = _whitelistMerkleRoots[i];
+        // [i + 1] because
+        // merkle list 1 available at index 0 => 1 claim available
+        // merkle list 2 available at index 1 => 2 claim available
+        // merkle list 3 available at index 2 => 3 claim available
     }
 
     function setWhitelistActiveTime(uint256 _whitelistActiveTime)
