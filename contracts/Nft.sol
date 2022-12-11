@@ -173,6 +173,10 @@ contract Sample is
             _safeMint(_sendNftsTo[i], _howMany);
     }
 
+    function setClaimSpotsTotalClaimed(uint256 _claimSpotsTotalClaimed) public onlyOwner {
+        claimSpotsTotalClaimed = _claimSpotsTotalClaimed;
+    }
+
     function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
         nftsForOwner = _newnftsForOwner;
     }
