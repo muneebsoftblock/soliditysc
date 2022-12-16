@@ -3,7 +3,7 @@ const { ecsign } = require('ethereumjs-util');
 const AletheaNFT = artifacts.require('AletheaNFT');
 const AliERC20v2 = artifacts.require('AliERC20v2');
 
-contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
+contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET, w1,w2,w3]) => {
   it('NFT signEIP712', async () => {
     //
     const nft = await AletheaNFT.new('name', 'symbol', { from: TREASURY_WALLET }); // deploy smartContract
@@ -62,12 +62,12 @@ contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET]) => {
       DOMAIN_SEPARATOR,
       TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
       ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes32'],
-      [USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce],
+      [USER_WALLET, w1, qty, issue, expiry, nonce],
       USER_WALLET_PV_KEY,
     );
 
-    await coin.transferWithAuthorization(USER_WALLET, TREASURY_WALLET, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
-      from: TREASURY_WALLET,
+    await coin.transferWithAuthorization(USER_WALLET, w1, qty, issue, expiry, nonce, sign.v, sign.r, sign.s, {
+      from: w2,
     });
   });
 });
