@@ -22,7 +22,6 @@ contract NftPublicSale is
     uint256 public maxMintForActiveSale;
     uint256 public nftPerAddressLimit = 3;
     uint256 public publicMintActiveTime = block.timestamp + 365 days; // https://www.epochconverter.com/
-    uint256 constant presaleSupply = 400;
     string constant baseExtension = ".json";
     string public metadataFolderIpfsLink;
 
