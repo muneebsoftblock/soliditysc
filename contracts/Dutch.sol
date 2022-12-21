@@ -1,33 +1,30 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.17;
 
-import "erc721a/contracts/ERC721A.sol";
+import "erc721a@4.2.3/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "erc721a/contracts/extensions/ERC721ABurnable.sol";
-import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";
 
 contract NftPublicSale is
     ERC721A("TechnoFeudal", "TF"),
-    ERC721AQueryable,
     Ownable,
-    ERC721ABurnable,
-    ERC2981
+    ERC2981,
+    DefaultOperatorFilterer
 {
-    using Strings for uint256;
-
     bool public revealed = false;
     string public notRevealedMetadataFolderIpfsLink;
     uint256 public maxMintAmount = 20;
     uint256 public maxSupply = 10_000;
     uint256 public costPerNft = 0.075 * 1e18;
     uint256 public nftsForOwner = 250;
-    string public metadataFolderIpfsLink;
-    uint256 constant presaleSupply = 400;
+    uint256 public maxMintForActiveSale;
     uint256 public nftPerAddressLimit = 3;
+    uint256 public publicMintActiveTime = block.timestamp + 365 days; // https://www.epochconverter.com/
+    uint256 constant presaleSupply = 400;
     string constant baseExtension = ".json";
-    uint256 public publicmintActiveTime = block.timestamp + 365 days; // https://www.epochconverter.com/
+    string public metadataFolderIpfsLink;
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 10_00); // 10.00 %
@@ -36,18 +33,22 @@ contract NftPublicSale is
     // public
     function purchaseTokens(uint256 _mintAmount) public payable {
         require(
-            block.timestamp > publicmintActiveTime,
+            block.timestamp > publicMintActiveTime,
             "the contract is paused"
         );
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
         require(
-            _mintAmount <= maxMintAmount,
+            _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
             "max mint amount per session exceeded"
         );
         require(
             supply + _mintAmount + nftsForOwner <= maxSupply,
             "max NFT limit exceeded"
+        );
+        require(
+            supply + _mintAmount + nftsForOwner <= maxMintForActiveSale,
+            "Max Mintable limit exceeded of this sale."
         );
         require(msg.value >= costPerNft * _mintAmount, "insufficient funds");
 
@@ -68,11 +69,6 @@ contract NftPublicSale is
         return super.supportsInterface(interfaceId);
     }
 
-    function burn(uint256 tokenId) public override {
-        super._burn(tokenId);
-        _resetTokenRoyalty(tokenId);
-    }
-
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
     }
@@ -85,7 +81,7 @@ contract NftPublicSale is
         public
         view
         virtual
-        override
+        override(ERC721A)
         returns (string memory)
     {
         require(
@@ -101,7 +97,7 @@ contract NftPublicSale is
                 ? string(
                     abi.encodePacked(
                         currentBaseURI,
-                        tokenId.toString(),
+                        _toString(tokenId),
                         baseExtension
                     )
                 )
@@ -117,6 +113,13 @@ contract NftPublicSale is
             value: address(this).balance
         }("");
         require(success);
+    }
+
+    function setMintForActiveSale(uint256 _maxMintForActiveSale)
+        external
+        onlyOwner
+    {
+        maxMintForActiveSale = _maxMintForActiveSale;
     }
 
     function giftNft(address[] calldata _sendNftsTo, uint256 _howMany)
@@ -165,79 +168,60 @@ contract NftPublicSale is
         notRevealedMetadataFolderIpfsLink = _notRevealedMetadataFolderIpfsLink;
     }
 
-    function setSaleActiveTime(uint256 _publicmintActiveTime) public onlyOwner {
-        publicmintActiveTime = _publicmintActiveTime;
+    function setSaleActiveTime(uint256 _publicMintActiveTime) public onlyOwner {
+        publicMintActiveTime = _publicMintActiveTime;
+    }
+
+    // implementing Operator Filter Registry
+    // https://opensea.io/blog/announcements/on-creator-fees
+    // https://github.com/ProjectOpenSea/operator-filter-registry#usage
+
+    function setApprovalForAll(address operator, bool approved)
+        public
+        virtual
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.setApprovalForAll(operator, approved);
+    }
+
+    function approve(address operator, uint256 tokenId)
+        public
+        payable
+        virtual
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.approve(operator, tokenId);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.transferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public payable virtual override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 }
 
-contract NftWhitelistSale is NftPublicSale {
-    ///////////////////////////////
-    //    PRESALE CODE STARTS    //
-    ///////////////////////////////
-
-    uint256 public presaleActiveTime = block.timestamp + 365 days; // https://www.epochconverter.com/;
-    uint256 public presaleMaxMint = 3;
-    uint256 public itemPricePresale = 0.03 * 1e18;
-    mapping(address => uint256) public presaleClaimedBy;
-    mapping(address => bool) public onPresale;
-
-    function addToPresale(address[] calldata addresses) external onlyOwner {
-        for (uint256 i = 0; i < addresses.length; i++)
-            onPresale[addresses[i]] = true;
-    }
-
-    function removeFromPresale(address[] calldata addresses)
-        external
-        onlyOwner
-    {
-        for (uint256 i = 0; i < addresses.length; i++)
-            onPresale[addresses[i]] = false;
-    }
-
-    function purchaseTokensPresale(uint256 _howMany) external payable {
-        uint256 supply = totalSupply();
-        require(supply <= presaleSupply, "presale limit reached");
-        require(
-            supply + _howMany + nftsForOwner <= maxSupply,
-            "max NFT limit exceeded"
-        );
-
-        require(onPresale[msg.sender], "You are not in presale");
-        require(block.timestamp > presaleActiveTime, "Presale is not active");
-        require(
-            msg.value >= _howMany * itemPricePresale,
-            "Try to send more ETH"
-        );
-
-        presaleClaimedBy[msg.sender] += _howMany;
-
-        require(
-            presaleClaimedBy[msg.sender] <= presaleMaxMint,
-            "Purchase exceeds max allowed"
-        );
-
-        _safeMint(msg.sender, _howMany);
-    }
-
-    // set limit of presale
-    function setPresaleMaxMint(uint256 _presaleMaxMint) external onlyOwner {
-        presaleMaxMint = _presaleMaxMint;
-    }
-
-    // Change presale price in case of ETH price changes too much
-    function setPricePresale(uint256 _itemPricePresale) external onlyOwner {
-        itemPricePresale = _itemPricePresale;
-    }
-
-    function setPresaleActiveTime(uint256 _presaleActiveTime)
-        external
-        onlyOwner
-    {
-        presaleActiveTime = _presaleActiveTime;
-    }
-}
-
-contract NftDutchAuctionSale is NftWhitelistSale {
+contract NftDutchAuctionSale is NftPublicSale {
     // Dutch Auction
 
     // immutable means you can not change value of this
@@ -264,18 +248,21 @@ contract NftDutchAuctionSale is NftWhitelistSale {
     // public
     function dutchMint(uint256 _mintAmount) public payable {
         uint256 price = getDutchPrice();
-        costPerNft = price / 2;
-        itemPricePresale = price / 2;
+        costPerNft = price / 2; // on each tx of dutch mint, update public sale price to half price of dutch price
 
         require(block.timestamp < expiresAt, "This auction has ended");
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
         require(
-            _mintAmount <= maxMintAmount,
+            _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
             "max mint amount per session exceeded"
         );
         require(
             supply + _mintAmount + nftsForOwner <= maxSupply,
+            "max NFT limit exceeded"
+        );
+        require(
+            supply + _mintAmount + nftsForOwner <= maxMintForActiveSale,
             "max NFT limit exceeded"
         );
         require(msg.value >= price * _mintAmount, "insufficient funds");
