@@ -118,7 +118,7 @@ contract NftPublicSale is
         maxMintForActiveSale = _maxMintForActiveSale;
     }
 
-    // Owner can gift NFTs to multiple adddresses
+    // Owner can gift NFTs to multiple addresses
     function giftNft(address[] calldata _sendNftsTo, uint256 _howMany)
         external
         onlyOwner
@@ -303,7 +303,7 @@ contract NftDutchAuctionSale is NftPublicSale {
         expiresAt = _expiresAt;
     }
 
-    // Owner can set Dutch NFTs time bblock
+    // Owner can set Dutch NFTs time block
     function setTimeBlock(uint256 _timeBlock) external onlyOwner {
         timeBlock = _timeBlock;
     }
