@@ -47,7 +47,7 @@ contract NftPublicSale is
         );
         require(
             supply + _mintAmount + nftsForOwner <= maxMintForActiveSale,
-            "Max Mintable limit exceeded of this sale."
+            "Max Mint limit exceeded of this sale."
         );
         require(msg.value >= costPerNft * _mintAmount, "insufficient funds");
 
@@ -150,8 +150,8 @@ contract NftPublicSale is
         costPerNft = _newCostPerNft;
     }
 
-    function setMaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
-        maxMintAmount = _newmaxMintAmount;
+    function setMaxMintAmount(uint256 _newMaxMintAmount) public onlyOwner {
+        maxMintAmount = _newMaxMintAmount;
     }
 
     function setMetadataFolderIpfsLink(string memory _newMetadataFolderIpfsLink)
@@ -301,7 +301,7 @@ contract NftAutoApproveMarketPlaces is NftDutchAuctionSale {
     // AUTO APPROVE MARKETPLACES  //
     ////////////////////////////////
 
-    mapping(address => bool) public projectProxy; // check public vs private vs internal gas
+    mapping(address => bool) public projectProxy; 
 
     function flipProxyState(address proxyAddress) public onlyOwner {
         projectProxy[proxyAddress] = !projectProxy[proxyAddress];
