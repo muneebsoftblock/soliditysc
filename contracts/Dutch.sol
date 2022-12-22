@@ -29,7 +29,7 @@ contract NftPublicSale is
         _setDefaultRoyalty(msg.sender, 10_00); // 10.00 %
     }
 
-    // public
+    // Public Sale function
     function purchaseTokens(uint256 _mintAmount) public payable {
         require(
             block.timestamp > publicMintActiveTime,
@@ -54,10 +54,6 @@ contract NftPublicSale is
         _safeMint(msg.sender, _mintAmount);
     }
 
-    ///////////////////////////////////
-    //       OVERRIDE CODE STARTS    //
-    ///////////////////////////////////
-
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -68,14 +64,17 @@ contract NftPublicSale is
         return super.supportsInterface(interfaceId);
     }
 
+    // Token ID start from 1
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
     }
 
+    // Base URI of IPFS metadata folder
     function _baseURI() internal view virtual override returns (string memory) {
         return metadataFolderIpfsLink;
     }
 
+    // Token URI of minted tokens
     function tokenURI(uint256 tokenId)
         public
         view
@@ -103,10 +102,7 @@ contract NftPublicSale is
                 : "";
     }
 
-    //////////////////
-    //  ONLY OWNER  //
-    //////////////////
-
+    // Only owner can withdraw money
     function withdraw() public payable onlyOwner {
         (bool success, ) = payable(msg.sender).call{
             value: address(this).balance
@@ -114,6 +110,7 @@ contract NftPublicSale is
         require(success);
     }
 
+    // Only owner can set Minting amount for active sale
     function setMintForActiveSale(uint256 _maxMintForActiveSale)
         external
         onlyOwner
@@ -121,6 +118,7 @@ contract NftPublicSale is
         maxMintForActiveSale = _maxMintForActiveSale;
     }
 
+    // Owner can gift NFTs to multiple adddresses
     function giftNft(address[] calldata _sendNftsTo, uint256 _howMany)
         external
         onlyOwner
@@ -131,6 +129,7 @@ contract NftPublicSale is
             _safeMint(_sendNftsTo[i], _howMany);
     }
 
+    //Owner can set Default Royalty
     function setDefaultRoyalty(address _receiver, uint96 _feeNumerator)
         public
         onlyOwner
@@ -138,22 +137,27 @@ contract NftPublicSale is
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
+    // Owner can reveal NFTs
     function revealFlip() public onlyOwner {
         revealed = !revealed;
     }
 
+    // Owner can set NFT per address limit
     function setNftPerAddressLimit(uint256 _limit) public onlyOwner {
         nftPerAddressLimit = _limit;
     }
 
+    // Owner can set Per NFT cost
     function setCostPerNft(uint256 _newCostPerNft) public onlyOwner {
         costPerNft = _newCostPerNft;
     }
 
+    // Owner can set max mint amount at once
     function setMaxMintAmount(uint256 _newMaxMintAmount) public onlyOwner {
         maxMintAmount = _newMaxMintAmount;
     }
 
+    // Owner can set Revealed NFTs IPFS metadata folder base URI
     function setMetadataFolderIpfsLink(string memory _newMetadataFolderIpfsLink)
         public
         onlyOwner
@@ -161,12 +165,14 @@ contract NftPublicSale is
         metadataFolderIpfsLink = _newMetadataFolderIpfsLink;
     }
 
+    // Owner can set Non-Revealed NFTs IPFS metadata folder base URI
     function setNotRevealedMetadataFolderIpfsLink(
         string memory _notRevealedMetadataFolderIpfsLink
     ) public onlyOwner {
         notRevealedMetadataFolderIpfsLink = _notRevealedMetadataFolderIpfsLink;
     }
 
+    // Owner can update sale start time
     function setSaleActiveTime(uint256 _publicMintActiveTime) public onlyOwner {
         publicMintActiveTime = _publicMintActiveTime;
     }
@@ -236,6 +242,7 @@ contract NftDutchAuctionSale is NftPublicSale {
     uint256 public expiresAt = 0; //  auction will not start automatically after deploying of contract
     uint256 public timeBlock = 30 minutes; // prices decreases every 30 minutes
 
+    //Get NFT's Dutch Price
     function getDutchPrice() public view returns (uint256) {
         uint256 timeElapsed = block.timestamp - startAt;
         uint256 timeBlocksPassed = timeElapsed / timeBlock;
@@ -244,7 +251,7 @@ contract NftDutchAuctionSale is NftPublicSale {
             discount >= startingPrice ? endingPrice : startingPrice - discount;
     }
 
-    // public
+    // Dutch Mint Public Function
     function dutchMint(uint256 _mintAmount) public payable {
         uint256 price = getDutchPrice();
         costPerNft = price / 2; // on each tx of dutch mint, update public sale price to half price of dutch price
@@ -271,37 +278,39 @@ contract NftDutchAuctionSale is NftPublicSale {
         _safeMint(msg.sender, _mintAmount);
     }
 
+    // Owner can set Dutch NFTs starting price
     function setStartingPrice(uint256 _startingPrice) external onlyOwner {
         startingPrice = _startingPrice;
     }
 
+    // Owner can set Dutch NFTs ending price
     function setEndingPrice(uint256 _endingPrice) external onlyOwner {
         endingPrice = _endingPrice;
     }
 
+    // Owner can set Dutch NFTs Discounted price
     function setDiscountRate(uint256 _discountRate) external onlyOwner {
         discountRate = _discountRate;
     }
 
+    // Owner can set Dutch Auction Start time
     function setStartAt(uint256 _startAt) external onlyOwner {
         startAt = _startAt;
     }
 
+    // Owner can set Dutch Auction expiry time
     function setExpiresAt(uint256 _expiresAt) external onlyOwner {
         expiresAt = _expiresAt;
     }
 
+    // Owner can set Dutch NFTs time bblock
     function setTimeBlock(uint256 _timeBlock) external onlyOwner {
         timeBlock = _timeBlock;
     }
 }
 
 contract NftAutoApproveMarketPlaces is NftDutchAuctionSale {
-    ////////////////////////////////
-    // AUTO APPROVE MARKETPLACES  //
-    ////////////////////////////////
-
-    mapping(address => bool) public projectProxy; 
+    mapping(address => bool) public projectProxy;
 
     function flipProxyState(address proxyAddress) public onlyOwner {
         projectProxy[proxyAddress] = !projectProxy[proxyAddress];
