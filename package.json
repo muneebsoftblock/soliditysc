@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "run-blockchain": "npx ganache-cli",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "run-blockchain": "npx ganache-cli -m hello",
+    "test": "truffle test"
   },
   "keywords": [],
   "author": "",
