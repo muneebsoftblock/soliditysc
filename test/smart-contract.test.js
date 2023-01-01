@@ -3,18 +3,18 @@ const { ecsign } = require('ethereumjs-util');
 const AletheaNFT = artifacts.require('AletheaNFT');
 const AliERC20v2 = artifacts.require('AliERC20v2');
 
-contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET, w1,w2,w3]) => {
+contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET, w1, w2, w3]) => {
   it('NFT signEIP712', async () => {
     //
     const nft = await AletheaNFT.new('name', 'symbol', { from: TREASURY_WALLET }); // deploy smartContract
     await nft.updateFeatures(65535, { from: TREASURY_WALLET }); // write api // enable transfers, permits
-    
+
     const nftId = 0; // nft id AvailableForMint // get from DB
     await nft.mint(USER_WALLET, nftId, { from: TREASURY_WALLET }); // write api
 
     assert.equal(USER_WALLET, '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8');
     const USER_WALLET_PV_KEY = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791';
-    
+
     const DOMAIN_SEPARATOR = await nft.DOMAIN_SEPARATOR();
     const PERMIT_FOR_ALL_TYPEHASH = await nft.PERMIT_FOR_ALL_TYPEHASH();
     const permitNonces = await nft.permitNonces(USER_WALLET);
@@ -75,7 +75,9 @@ contract('AletheaNFT', ([USER_WALLET, THIRD_PARTY_WALLET, TREASURY_WALLET, w1,w2
 // util
 const signEIP712 = (domainSeparator, typeHash, types, parameters, privateKey) => {
   const digest = web3.utils.keccak256(
-    '0x1901' + strip0x(domainSeparator) + strip0x(web3.utils.keccak256(web3.eth.abi.encodeParameters(['bytes32', ...types], [typeHash, ...parameters]))),
+    '0x1901' +
+      strip0x(domainSeparator) +
+      strip0x(web3.utils.keccak256(web3.eth.abi.encodeParameters(['bytes32', ...types], [typeHash, ...parameters]))),
   );
   return ecSign(digest, privateKey);
 };
