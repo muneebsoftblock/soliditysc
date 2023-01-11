@@ -14,16 +14,16 @@ contract NftPublicSale is
     DefaultOperatorFilterer
 {
     bool public revealed = false;
-    string public notRevealedMetadataFolderIpfsLink;
-    uint256 public maxMintAmount = 20;
     uint256 public maxSupply = 10_000;
-    uint256 public costPerNft = 0.075 * 1e18;
+    uint256 public maxMintAmount = 20;
     uint256 public nftsForOwner = 250;
     uint256 public maxMintForActiveSale;
-    uint256 public nftPerAddressLimit = 3;
-    uint256 public publicMintActiveTime = block.timestamp + 365 days; // https://www.epochconverter.com/
-    string constant baseExtension = ".json";
     string public metadataFolderIpfsLink;
+    uint256 public nftPerAddressLimit = 3;
+    string constant baseExtension = ".json";
+    uint256 public costPerNft = 0.075 * 1e18;
+    string public notRevealedMetadataFolderIpfsLink;
+    uint256 public publicMintActiveTime = block.timestamp + 365 days; // gte value from https://www.epochconverter.com/
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 10_00); // 10.00 %
