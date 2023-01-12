@@ -175,7 +175,7 @@ contract NftPublicSale is
         nftRevealed = !nftRevealed;
     }
     
-    
+
     // Owner can set NFT per address limit
     function setNftPerAddressLimit(uint256 _limit) public onlyOwner {
         nftPerAddressLimit = _limit;
@@ -215,6 +215,7 @@ contract NftPublicSale is
     // implementing Operator Filter Registry
     // https://opensea.io/blog/announcements/on-creator-fees
     // https://github.com/ProjectOpenSea/operator-filter-registry#usage
+
 
     function setApprovalForAll(address operator, bool approved)
         public
@@ -270,24 +271,25 @@ contract NftDutchAuctionSale is NftPublicSale {
 
     Whitelist will activate after public sale. Users should be able to purchase at 50% off of the final Dutch auction sale.
     */
-    uint256 public startingPrice = 1 ether;
-    uint256 public endingPrice = 0.1 ether;
-    uint256 public discountRate = 0.05 ether;
+    uint256 public startingPrice = 1 ether;  // this will be the auction starting price for a specific NFT
+    uint256 public endingPrice = 0.1 ether; 
+    uint256 public discountRate = 0.05 ether;  // discount will be applied when the bidding is ended
     uint256 public startAt = type(uint256).max; // auction will not start automatically after deploying of contract
     uint256 public expiresAt = 0; //  auction will not start automatically after deploying of contract
     uint256 public timeBlock = 30 minutes; // prices decreases every 30 minutes
 
     //Get NFT's Dutch Price
     function getDutchPrice() public view returns (uint256) {
+        // this will safe the time when the in between the at which auction start and when the ductchPrice function is called
         uint256 timeElapsed = block.timestamp - startAt;
-        uint256 timeBlocksPassed = timeElapsed / timeBlock;
+        uint256 timeBlocksPassed = timeElapsed / timeBlock; // calculating the time for the discount apply in between the specific time period
         uint256 discount = discountRate * timeBlocksPassed;
         return
             discount >= startingPrice ? endingPrice : startingPrice - discount;
     }
 
     // Dutch Mint Public Function
-    function dutchMint(uint256 _mintAmount) public payable {
+    function dutchAuctionMint(uint256 _mintAmount) public payable {
         uint256 price = getDutchPrice();
         costPerNft = price / 2; // on each tx of dutch mint, update public sale price to half price of dutch price
 
@@ -314,32 +316,32 @@ contract NftDutchAuctionSale is NftPublicSale {
     }
 
     // Owner can set Dutch NFTs starting price
-    function setStartingPrice(uint256 _startingPrice) external onlyOwner {
+    function setNftStartingPrice(uint256 _startingPrice) external onlyOwner {
         startingPrice = _startingPrice;
     }
 
     // Owner can set Dutch NFTs ending price
-    function setEndingPrice(uint256 _endingPrice) external onlyOwner {
+    function setNftEndingPrice(uint256 _endingPrice) external onlyOwner {
         endingPrice = _endingPrice;
     }
 
     // Owner can set Dutch NFTs Discounted price
-    function setDiscountRate(uint256 _discountRate) external onlyOwner {
+    function setNFtDiscountRate(uint256 _discountRate) external onlyOwner {
         discountRate = _discountRate;
     }
 
     // Owner can set Dutch Auction Start time
-    function setStartAt(uint256 _startAt) external onlyOwner {
+    function setAuctionStartAt(uint256 _startAt) external onlyOwner {
         startAt = _startAt;
     }
 
     // Owner can set Dutch Auction expiry time
-    function setExpiresAt(uint256 _expiresAt) external onlyOwner {
+    function setAuctionExpiresAt(uint256 _expiresAt) external onlyOwner {
         expiresAt = _expiresAt;
     }
 
     // Owner can set Dutch NFTs time block
-    function setTimeBlock(uint256 _timeBlock) external onlyOwner {
+    function setNftTimeBlock(uint256 _timeBlock) external onlyOwner {
         timeBlock = _timeBlock;
     }
 }
