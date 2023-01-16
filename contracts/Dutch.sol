@@ -61,8 +61,8 @@ contract MintingNFTsContract is
             "Max Mint limit exceeded of this sale."
         );
         require(msg.value >= NFTcost * _mintAmount, "insufficient funds");
-        /// @param:msg.sender will get caller address
-        /// @param:_mintAmount will get how much NFTs caller wants to mint
+        /// @parammsg.sender will get caller address
+        /// @param _mintAmount will get how much NFTs caller wants to mint
         _safeMint(msg.sender, _mintAmount);
     }
 
@@ -123,9 +123,9 @@ contract MintingNFTsContract is
         require(success);
     }
 
-    /** 
+    /**
      * @notice Only owner can set Minting amount for active sale
-     * @param: _maxMintForActiveSale Owner will pass max mint amount for current active sale
+     * @param _maxMintForActiveSale Owner will pass max mint amount for current active sale
      */
     function setPerSaleMintableNFTs(uint256 _maxMintForActiveSale)
         external
@@ -136,8 +136,8 @@ contract MintingNFTsContract is
 
     /**
      * @notice Owner can gift NFTs to multiple addresses
-     * @param:_sendNftsTo Owner will pass list of address for gift NFTs
-     * @param:_howMany Owner will be able to send multiple NFTs at once
+     * @param _sendNftsTo Owner will pass list of address for gift NFTs
+     * @param _howMany Owner will be able to send multiple NFTs at once
      */
     function sendNFTsToWhitelistAddresses(
         address[] calldata _sendNftsTo,
@@ -149,10 +149,10 @@ contract MintingNFTsContract is
             _safeMint(_sendNftsTo[i], _howMany);
     }
 
-    /** 
+    /**
      * @notice Owner can set Default Royalty
-     * @param: _receiver Owner will pass reciever address
-     * @param: _feeNumerator Owner will pass numerator fee
+     * @param _receiver Owner will pass reciever address
+     * @param _feeNumerator Owner will pass numerator fee
      */
     function setDefaultRoyalty(address _receiver, uint96 _feeNumerator)
         public
@@ -168,29 +168,29 @@ contract MintingNFTsContract is
 
     /**
      * @notice Owner can set NFT per address limit
-     * @param:_limit Owner will pass per wallet limit
+     * @param _limit Owner will pass per wallet limit
      */
     function setPerWalletLimit(uint256 _limit) public onlyOwner {
         perWalletLimit = _limit;
     }
 
-    /** 
+    /**
      * @notice Owner can set Per NFT cost
-     * @param: _newCostPerNft Owner will pass new cost of NFT
+     * @param _newCostPerNft Owner will pass new cost of NFT
      */
     function setNFTPrice(uint256 _newCostPerNft) public onlyOwner {
         NFTcost = _newCostPerNft;
     }
 
     /** @notice Owner can set max mint amount at once during current sale
-     * @param: _newMaxMintAmount Owner will pass new amount
+     * @param _newMaxMintAmount Owner will pass new amount
      */
     function setMaxMintQuantity(uint256 _newMaxMintAmount) public onlyOwner {
         maxMintAmount = _newMaxMintAmount;
     }
 
     /** @notice Owner can set Revealed NFTs IPFS metadata folder base URI
-     * @param: _newMetadataFolderIpfsLink Only owner can pass revealed NFTs metadata base URI
+     * @param _newMetadataFolderIpfsLink Only owner can pass revealed NFTs metadata base URI
      */
     function setRevealCollectionURL(string memory _newMetadataFolderIpfsLink)
         public
@@ -200,7 +200,7 @@ contract MintingNFTsContract is
     }
 
     /** @notice Owner can set Non-Revealed NFTs IPFS metadata folder base URI
-     * @param: _notRevealedMetadataFolderIpfsLink Owner will pass non Revealed base URI
+     * @param _notRevealedMetadataFolderIpfsLink Owner will pass non Revealed base URI
      */
     function setNotRevealCollectionURL(
         string memory _notRevealedMetadataFolderIpfsLink
@@ -209,7 +209,7 @@ contract MintingNFTsContract is
     }
 
     /** @notice Owner can update sale start time
-     * @param: _publicMintActiveTime Owner will pass public mint active time in epoch format
+     * @param _publicMintActiveTime Owner will pass public mint active time in epoch format
      */
     function setPublicSaleTime(uint256 _publicMintActiveTime) public onlyOwner {
         startSaleTime = _publicMintActiveTime;
@@ -290,7 +290,7 @@ contract NftDutchAuctionSale is MintingNFTsContract {
     }
 
     /** @notice Dutch Mint Public Function
-     * @param:_mintAmount Caller will pass minting NFTs amount
+     * @param _mintAmount Caller will pass minting NFTs amount
      */
     function dutchMint(uint256 _mintAmount) public payable {
         uint256 price = getCurrentNFTPrice();
@@ -319,41 +319,41 @@ contract NftDutchAuctionSale is MintingNFTsContract {
     }
 
     /** @notice Owner can set Dutch NFTs starting price
-     * @param:_InitialPrice Owner will pass starting price
+     * @param _InitialPrice Owner will pass starting price
      */
     function setInitialPrice(uint256 _InitialPrice) external onlyOwner {
         startingPrice = _InitialPrice;
     }
 
     /** @notice Owner can set Dutch NFTs ending price
-     * @param:_finalPrice Owner will pass ending price
+     * @param _finalPrice Owner will pass ending price
      */
     function setFinalPrice(uint256 _finalPrice) external onlyOwner {
         finalPrice = _finalPrice;
     }
 
     /// @notice Owner can set Dutch NFTs Discounted price
-    /// @param:_discountRate Owner will pass discounted price
+    /// @param _discountRate Owner will pass discounted price
     function setDiscountRate(uint256 _discountRate) external onlyOwner {
         discountRate = _discountRate;
     }
 
     /** @notice Owner can set Dutch Auction Start time
-     * @param:_startAt Owner will pass start time in epoch format
+     * @param _startAt Owner will pass start time in epoch format
      */
     function setAuctionStartTime(uint256 _startAt) external onlyOwner {
         startAt = _startAt;
     }
 
     /** @notice Owner can set Dutch Auction expiry time
-     * @param:_expiryTime Owner will pass end time in epoch format
+     * @param _expiryTime Owner will pass end time in epoch format
      */
     function setAuctionEndTime(uint256 _expiryTime) external onlyOwner {
         expiresAt = _expiryTime;
     }
 
     /// @notice Owner can set Dutch NFTs time block
-    /// @param:_timeBlock Owner will pass time block
+    /// @param _timeBlock Owner will pass time block
     function setTimeBlock(uint256 _timeBlock) external onlyOwner {
         timeBlock = _timeBlock;
     }
