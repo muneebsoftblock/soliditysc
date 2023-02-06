@@ -33,6 +33,9 @@ contract LaziName is
     uint256 public laziNamePrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
+    mapping(string => bool) public minted;
+    mapping(uint256 => string) public domainNameOf;
+
     string laziNameMetadataURI;
 
     // these lines are called only once when the contract is deployed
@@ -56,18 +59,20 @@ contract LaziName is
     }
 
     // buy / mint LaziName Nfts here
-    function buyLaziName(uint256 _laziNameQty)
+    function buyLaziName(string memory _laziName)
         external
         payable
         saleActive(saleActiveTime)
         callerIsUser
-        mintLimit(_laziNameQty, maxLaziNamePerWallet)
-        priceAvailableFirstNftFree(_laziNameQty)
-        laziNameAvailable(_laziNameQty)
+        mintLimit(1, maxLaziNamePerWallet)
+        priceAvailableFirstNftFree(1)
+        laziNameAvailable(1)
     {
         require(_totalMinted() >= freeLaziName, "Get your LaziName for free");
+        require(!minted[_laziName], "Nft Domain Already Minted");
 
-        _mint(msg.sender, _laziNameQty);
+        domainNameOf[totalSupply()] = _laziName;
+        _mint(msg.sender, 1);
     }
 
     function buyLaziNameFree(uint256 _laziNameQty)
