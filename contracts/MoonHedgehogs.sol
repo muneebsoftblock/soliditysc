@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+// isApprovedForAll
+// withdraw
+
+//
 pragma solidity 0.8.14;
 
 import "erc721a/contracts/ERC721A.sol";
@@ -9,9 +13,8 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-
-contract MoonHedgehogsSale is
-    ERC721A("Moon Hedgehogs", "MH"),
+contract LaziName is
+    ERC721A("Lazi Name Service", "LNS"),
     Ownable,
     ERC721AQueryable,
     ERC721ABurnable,
@@ -19,18 +22,18 @@ contract MoonHedgehogsSale is
 {
     // Variables
     uint256 public constant maxSupply = 10000;
-    uint256 public reservedHedgehogs = 500;
+    uint256 public reservedLaziName = 500;
 
-    uint256 public freeHedgehogs = 0;
-    uint256 public freeMaxHedgehogsPerWallet = 0;
+    uint256 public freeLaziName = 0;
+    uint256 public freeMaxLaziNamePerWallet = 0;
     uint256 public freeSaleActiveTime = type(uint256).max;
 
     uint256 public firstFreeMints = 1;
-    uint256 public maxHedgehogsPerWallet = 2;
-    uint256 public hedgehogsPrice = 0.01 ether;
+    uint256 public maxLaziNamePerWallet = 2;
+    uint256 public laziNamePrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
-    string hedgehogsMetadataURI;
+    string laziNameMetadataURI;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -41,51 +44,45 @@ contract MoonHedgehogsSale is
         autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
     }
 
-    // Airdrop Hedgehogs
-    function giftHedgehogs(
-        address[] calldata _sendNftsTo,
-        uint256 _hedgehogsQty
-    )
+    // Airdrop LaziName
+    function giftLaziName(address[] calldata _sendNftsTo, uint256 _laziNameQty)
         external
         onlyOwner
-        hedgehogsAvailable(_sendNftsTo.length * _hedgehogsQty)
+        laziNameAvailable(_sendNftsTo.length * _laziNameQty)
     {
-        reservedHedgehogs -= _sendNftsTo.length * _hedgehogsQty;
+        reservedLaziName -= _sendNftsTo.length * _laziNameQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _hedgehogsQty);
+            _safeMint(_sendNftsTo[i], _laziNameQty);
     }
 
-    // buy / mint Hedgehogs Nfts here
-    function buyHedgehogs(uint256 _hedgehogsQty)
+    // buy / mint LaziName Nfts here
+    function buyLaziName(uint256 _laziNameQty)
         external
         payable
         saleActive(saleActiveTime)
         callerIsUser
-        mintLimit(_hedgehogsQty, maxHedgehogsPerWallet)
-        priceAvailableFirstNftFree(_hedgehogsQty)
-        hedgehogsAvailable(_hedgehogsQty)
+        mintLimit(_laziNameQty, maxLaziNamePerWallet)
+        priceAvailableFirstNftFree(_laziNameQty)
+        laziNameAvailable(_laziNameQty)
     {
-        require(
-            _totalMinted() >= freeHedgehogs,
-            "Get your MoonHedgehogs for free"
-        );
+        require(_totalMinted() >= freeLaziName, "Get your LaziName for free");
 
-        _mint(msg.sender, _hedgehogsQty);
+        _mint(msg.sender, _laziNameQty);
     }
 
-    function buyHedgehogsFree(uint256 _hedgehogsQty)
+    function buyLaziNameFree(uint256 _laziNameQty)
         external
         saleActive(freeSaleActiveTime)
         callerIsUser
-        mintLimit(_hedgehogsQty, freeMaxHedgehogsPerWallet)
-        hedgehogsAvailable(_hedgehogsQty)
+        mintLimit(_laziNameQty, freeMaxLaziNamePerWallet)
+        laziNameAvailable(_laziNameQty)
     {
         require(
-            _totalMinted() < freeHedgehogs,
-            "MoonHedgehogs max free limit reached"
+            _totalMinted() < freeLaziName,
+            "LaziName max free limit reached"
         );
 
-        _mint(msg.sender, _hedgehogsQty);
+        _mint(msg.sender, _laziNameQty);
     }
 
     // withdraw eth
@@ -94,31 +91,28 @@ contract MoonHedgehogsSale is
     }
 
     // setters
-    function setHedgehogsPrice(uint256 _newPrice) external onlyOwner {
-        hedgehogsPrice = _newPrice;
+    function setLaziNamePrice(uint256 _newPrice) external onlyOwner {
+        laziNamePrice = _newPrice;
     }
 
-    function setFreeHedgehogs(uint256 _freeHedgehogs) external onlyOwner {
-        freeHedgehogs = _freeHedgehogs;
+    function setFreeLaziName(uint256 _freeLaziName) external onlyOwner {
+        freeLaziName = _freeLaziName;
     }
 
     function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
         firstFreeMints = _firstFreeMints;
     }
 
-    function setReservedHedgehogs(uint256 _reservedHedgehogs)
-        external
-        onlyOwner
-    {
-        reservedHedgehogs = _reservedHedgehogs;
+    function setReservedLaziName(uint256 _reservedLaziName) external onlyOwner {
+        reservedLaziName = _reservedLaziName;
     }
 
-    function setMaxHedgehogsPerWallet(
-        uint256 _maxHedgehogsPerWallet,
-        uint256 _freeMaxHedgehogsPerWallet
+    function setMaxLaziNamePerWallet(
+        uint256 _maxLaziNamePerWallet,
+        uint256 _freeMaxLaziNamePerWallet
     ) external onlyOwner {
-        maxHedgehogsPerWallet = _maxHedgehogsPerWallet;
-        freeMaxHedgehogsPerWallet = _freeMaxHedgehogsPerWallet;
+        maxLaziNamePerWallet = _maxLaziNamePerWallet;
+        freeMaxLaziNamePerWallet = _freeMaxLaziNamePerWallet;
     }
 
     function setSaleActiveTime(
@@ -129,11 +123,11 @@ contract MoonHedgehogsSale is
         freeSaleActiveTime = _freeSaleActiveTime;
     }
 
-    function setHedgehogsMetadataURI(string memory _hedgehogsMetadataURI)
+    function setLaziNameMetadataURI(string memory _laziNameMetadataURI)
         external
         onlyOwner
     {
-        hedgehogsMetadataURI = _hedgehogsMetadataURI;
+        laziNameMetadataURI = _laziNameMetadataURI;
     }
 
     function setRoyalty(address _receiver, uint96 _feeNumerator)
@@ -145,7 +139,7 @@ contract MoonHedgehogsSale is
 
     // System Related
     function _baseURI() internal view override returns (string memory) {
-        return hedgehogsMetadataURI;
+        return laziNameMetadataURI;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -173,25 +167,25 @@ contract MoonHedgehogsSale is
         _;
     }
 
-    modifier mintLimit(uint256 _hedgehogsQty, uint256 _maxHedgehogsPerWallet) {
+    modifier mintLimit(uint256 _laziNameQty, uint256 _maxLaziNamePerWallet) {
         require(
-            _numberMinted(msg.sender) + _hedgehogsQty <= _maxHedgehogsPerWallet,
-            "MoonHedgehogs max x wallet exceeded"
+            _numberMinted(msg.sender) + _laziNameQty <= _maxLaziNamePerWallet,
+            "LaziName max x wallet exceeded"
         );
         _;
     }
 
-    modifier hedgehogsAvailable(uint256 _hedgehogsQty) {
+    modifier laziNameAvailable(uint256 _laziNameQty) {
         require(
-            _hedgehogsQty + totalSupply() + reservedHedgehogs <= maxSupply,
+            _laziNameQty + totalSupply() + reservedLaziName <= maxSupply,
             "Currently are sold out"
         );
         _;
     }
 
-    modifier priceAvailable(uint256 _hedgehogsQty) {
+    modifier priceAvailable(uint256 _laziNameQty) {
         require(
-            msg.value == _hedgehogsQty * hedgehogsPrice,
+            msg.value == _laziNameQty * laziNamePrice,
             "Hey hey, send the right amount of ETH"
         );
         _;
@@ -200,18 +194,18 @@ contract MoonHedgehogsSale is
     function getPrice(uint256 _qty) public view returns (uint256 price) {
         uint256 minted = _numberMinted(msg.sender) + _qty;
         if (minted > firstFreeMints)
-            price = (minted - firstFreeMints) * hedgehogsPrice;
+            price = (minted - firstFreeMints) * laziNamePrice;
     }
 
-    modifier priceAvailableFirstNftFree(uint256 _hedgehogsQty) {
+    modifier priceAvailableFirstNftFree(uint256 _laziNameQty) {
         require(
-            msg.value == getPrice(_hedgehogsQty),
+            msg.value == getPrice(_laziNameQty),
             "Hey hey, send the right amount of ETH"
         );
         _;
     }
 
-    // Hedgehogs Auto Approves Marketplaces
+    // LaziName Auto Approves Marketplaces
     mapping(address => bool) private allowed;
 
     function autoApproveMarketplace(address _spender) public onlyOwner {
@@ -224,52 +218,7 @@ contract MoonHedgehogsSale is
         override(ERC721A, IERC721)
         returns (bool)
     {
-        if (
-            _operator ==
-            OpenSea(0xa5409ec958C83C3f309868babACA7c86DCB077c1).proxies(_owner)
-        ) return true;
-        else if (allowed[_operator]) return true; // Opensea or any other Marketplace
+        if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
 }
-
-contract MoonHedgehogsStaking is MoonHedgehogsSale {
-    mapping(address => bool) public canStake;
-
-    function addToWhitelistForStaking(address _operator) external onlyOwner {
-        canStake[_operator] = !canStake[_operator];
-    }
-
-    modifier onlyWhitelistedForStaking() {
-        require(canStake[msg.sender], "This contract is not allowed to stake");
-        _;
-    }
-
-    mapping(uint256 => bool) public staked;
-
-    function _beforeTokenTransfers(
-        address,
-        address,
-        uint256 startTokenId,
-        uint256
-    ) internal view override {
-        require(
-            !staked[startTokenId],
-            "Nope, unstake your MoonHedgehogs first"
-        );
-    }
-
-    function stakeHedgehogs(uint256[] calldata _tokenIds, bool _stake)
-        external
-        onlyWhitelistedForStaking
-    {
-        for (uint256 i = 0; i < _tokenIds.length; i++)
-            staked[_tokenIds[i]] = _stake;
-    }
-}
-
-interface OpenSea {
-    function proxies(address) external view returns (address);
-}
-
-contract MoonHedgehogs is MoonHedgehogsStaking {}
