@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-// isApprovedForAll
+// TODO: update to latest way
 // withdraw
 
 //
