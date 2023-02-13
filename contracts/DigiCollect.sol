@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+//  TODO:
+// sol version 0.8.18
 // warnings, unused var
-// 
+// withdraw, same contract
+//
 // dua, 80 20 in coding, can actually check from last year IA
 
 pragma solidity 0.8.14;
@@ -17,23 +20,46 @@ contract DigiCollect is
     ERC721A("Digi Collect Labs", "DCL"),
     Ownable,
     ERC721AQueryable,
-    ERC721ABurnable,
     ERC2981
 {
+    /*
+    
+
+
+
+
+
+
+
+
+
+
+    put the variable correct values
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    */
+
     // Variables
     uint256 public constant maxSupply = 10000;
     uint256 public reservedDigiCollect = 500;
 
-    uint256 public freeDigiCollect = 0;
-    uint256 public freeMaxDigiCollectPerWallet = 0;
-    uint256 public freeSaleActiveTime = type(uint256).max;
-
-    uint256 public firstFreeMints = 1;
-    uint256 public maxDigiCollectPerWallet = 2;
+    uint256 public maxDigiCollectPerWallet = 10;
     uint256 public digiCollectPrice = 0.01 ether;
-    uint256 public saleActiveTime = type(uint256).max;
+    uint256 public saleActiveTime = type(uint256).max; // sale is closed by default
 
-    string digiCollectMetadataURI;
+    string digiCollectImages;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -62,32 +88,12 @@ contract DigiCollect is
     function buyDigiCollect(uint256 _digiCollectQty)
         external
         payable
+        callerIsUser
         saleActive(saleActiveTime)
-        callerIsUser
+        pricePaid(_digiCollectQty)
+        digiCollectAvailable(_digiCollectQty)
         mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
-        priceAvailableFirstNftFree(_digiCollectQty)
-        digiCollectAvailable(_digiCollectQty)
     {
-        require(
-            _totalMinted() >= freeDigiCollect,
-            "Get your DigiCollect for free"
-        );
-
-        _mint(msg.sender, _digiCollectQty);
-    }
-
-    function buyDigiCollectFree(uint256 _digiCollectQty)
-        external
-        saleActive(freeSaleActiveTime)
-        callerIsUser
-        mintLimit(_digiCollectQty, freeMaxDigiCollectPerWallet)
-        digiCollectAvailable(_digiCollectQty)
-    {
-        require(
-            _totalMinted() < freeDigiCollect,
-            "DigiCollect max free limit reached"
-        );
-
         _mint(msg.sender, _digiCollectQty);
     }
 
@@ -97,16 +103,8 @@ contract DigiCollect is
     }
 
     // setters
-    function setDigiCollectPrice(uint256 _newPrice) external onlyOwner {
-        digiCollectPrice = _newPrice;
-    }
-
-    function setFreeDigiCollect(uint256 _freeDigiCollect) external onlyOwner {
-        freeDigiCollect = _freeDigiCollect;
-    }
-
-    function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
-        firstFreeMints = _firstFreeMints;
+    function setDigiCollectPrice(uint256 _digiCollectPrice) external onlyOwner {
+        digiCollectPrice = _digiCollectPrice;
     }
 
     function setReservedDigiCollect(uint256 _reservedDigiCollect)
@@ -116,27 +114,22 @@ contract DigiCollect is
         reservedDigiCollect = _reservedDigiCollect;
     }
 
-    function setMaxDigiCollectPerWallet(
-        uint256 _maxDigiCollectPerWallet,
-        uint256 _freeMaxDigiCollectPerWallet
-    ) external onlyOwner {
-        maxDigiCollectPerWallet = _maxDigiCollectPerWallet;
-        freeMaxDigiCollectPerWallet = _freeMaxDigiCollectPerWallet;
-    }
-
-    function setSaleActiveTime(
-        uint256 _saleActiveTime,
-        uint256 _freeSaleActiveTime
-    ) external onlyOwner {
-        saleActiveTime = _saleActiveTime;
-        freeSaleActiveTime = _freeSaleActiveTime;
-    }
-
-    function setDigiCollectMetadataURI(string memory _digiCollectMetadataURI)
+    function setMaxDigiCollectPerWallet(uint256 _maxDigiCollectPerWallet)
         external
         onlyOwner
     {
-        digiCollectMetadataURI = _digiCollectMetadataURI;
+        maxDigiCollectPerWallet = _maxDigiCollectPerWallet;
+    }
+
+    function setSaleActiveTime(uint256 _saleActiveTime) external onlyOwner {
+        saleActiveTime = _saleActiveTime;
+    }
+
+    function setDigiCollectImages(string memory _digiCollectImages)
+        external
+        onlyOwner
+    {
+        digiCollectImages = _digiCollectImages;
     }
 
     function setRoyalty(address _receiver, uint96 _feeNumerator)
@@ -148,7 +141,7 @@ contract DigiCollect is
 
     // System Related
     function _baseURI() internal view override returns (string memory) {
-        return digiCollectMetadataURI;
+        return digiCollectImages;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -176,9 +169,13 @@ contract DigiCollect is
         _;
     }
 
-    modifier mintLimit(uint256 _digiCollectQty, uint256 _maxDigiCollectPerWallet) {
+    modifier mintLimit(
+        uint256 _digiCollectQty,
+        uint256 _maxDigiCollectPerWallet
+    ) {
         require(
-            _numberMinted(msg.sender) + _digiCollectQty <= _maxDigiCollectPerWallet,
+            _numberMinted(msg.sender) + _digiCollectQty <=
+                _maxDigiCollectPerWallet,
             "DigiCollect max x wallet exceeded"
         );
         _;
@@ -192,21 +189,11 @@ contract DigiCollect is
         _;
     }
 
-    modifier priceAvailable(uint256 _digiCollectQty) {
-        require(
-            msg.value == _digiCollectQty * digiCollectPrice,
-            "Hey hey, send the right amount of ETH"
-        );
-        _;
-    }
-
     function getPrice(uint256 _qty) public view returns (uint256 price) {
-        uint256 minted = _numberMinted(msg.sender) + _qty;
-        if (minted > firstFreeMints)
-            price = (minted - firstFreeMints) * digiCollectPrice;
+        price = _qty * digiCollectPrice;
     }
 
-    modifier priceAvailableFirstNftFree(uint256 _digiCollectQty) {
+    modifier pricePaid(uint256 _digiCollectQty) {
         require(
             msg.value == getPrice(_digiCollectQty),
             "Hey hey, send the right amount of ETH"
@@ -227,11 +214,7 @@ contract DigiCollect is
         override(ERC721A, IERC721)
         returns (bool)
     {
-        if (
-            _operator ==
-            OpenSea(0xa5409ec958C83C3f309868babACA7c86DCB077c1).proxies(_owner)
-        ) return true;
-        else if (allowed[_operator]) return true; // Opensea or any other Marketplace
+        if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
 }
