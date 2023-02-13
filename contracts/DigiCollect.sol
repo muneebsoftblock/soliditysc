@@ -9,8 +9,10 @@
 
 pragma solidity 0.8.14;
 
-import "erc721a@3.3.0/contracts/ERC721A.sol";
-import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
+import "erc721a/contracts/ERC721A.sol";
+import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+// import "erc721a@3.3.0/contracts/ERC721A.sol";
+// import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -54,7 +56,7 @@ contract DigiCollect is
     uint256 public constant maxSupply = 10000;
     uint256 public reservedDigiCollect = 500;
 
-    uint256 public maxDigiCollectPerWallet = 10;
+    uint256 public maxDigiCollectPerWallet = 300;
     uint256 public digiCollectPrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max; // sale is closed by default
 
