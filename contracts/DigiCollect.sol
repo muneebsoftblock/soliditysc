@@ -13,7 +13,7 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract DigiCollectSale is
+contract DigiCollect is
     ERC721A("Digi Collect Labs", "DCL"),
     Ownable,
     ERC721AQueryable,
@@ -235,44 +235,3 @@ contract DigiCollectSale is
         return super.isApprovedForAll(_owner, _operator);
     }
 }
-
-contract DigiCollectStaking is DigiCollectSale {
-    mapping(address => bool) public canStake;
-
-    function addToWhitelistForStaking(address _operator) external onlyOwner {
-        canStake[_operator] = !canStake[_operator];
-    }
-
-    modifier onlyWhitelistedForStaking() {
-        require(canStake[msg.sender], "This contract is not allowed to stake");
-        _;
-    }
-
-    mapping(uint256 => bool) public staked;
-
-    function _beforeTokenTransfers(
-        address,
-        address,
-        uint256 startTokenId,
-        uint256
-    ) internal view override {
-        require(
-            !staked[startTokenId],
-            "Nope, unstake your DigiCollect first"
-        );
-    }
-
-    function stakeDigiCollect(uint256[] calldata _tokenIds, bool _stake)
-        external
-        onlyWhitelistedForStaking
-    {
-        for (uint256 i = 0; i < _tokenIds.length; i++)
-            staked[_tokenIds[i]] = _stake;
-    }
-}
-
-interface OpenSea {
-    function proxies(address) external view returns (address);
-}
-
-contract DigiCollect is DigiCollectStaking {}
