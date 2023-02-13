@@ -189,8 +189,28 @@ contract DigiCollect is
         _;
     }
 
-    function getPrice(uint256 _qty) public view returns (uint256 price) {
-        price = _qty * digiCollectPrice;
+    uint256 nftSoldPacketSize = 200;
+
+    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
+        external
+        onlyOwner
+    {
+        nftSoldPacketSize = _nftSoldPacketSize;
+    }
+
+    uint256 priceIncrease = 0.005 ether;
+
+    function set_priceIncrease(uint256 _priceIncrease) external onlyOwner {
+        priceIncrease = _priceIncrease;
+    }
+
+    function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
+        uint256 minted = totalSupply();
+
+        uint256 packetsMinted = minted / nftSoldPacketSize; // getting benefit from dangerous calculation
+        uint256 basePrice = digiCollectPrice * _qty;
+        uint256 priceIncreaseForAll = packetsMinted * priceIncrease * _qty;
+        priceNow = basePrice + priceIncreaseForAll;
     }
 
     modifier pricePaid(uint256 _digiCollectQty) {
