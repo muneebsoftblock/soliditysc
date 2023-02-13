@@ -2,6 +2,7 @@
 
 // TODO: update to latest way
 // withdraw
+// getPrice warning
 
 //
 pragma solidity 0.8.14;
