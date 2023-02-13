@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+// warnings, unused var
+// 
+// dua, 80 20 in coding, can actually check from last year IA
+
 pragma solidity 0.8.14;
 
 import "erc721a/contracts/ERC721A.sol";
