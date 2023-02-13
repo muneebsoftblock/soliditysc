@@ -189,6 +189,7 @@ contract DigiCollect is
         _;
     }
 
+    // Price Module:
     uint256 nftSoldPacketSize = 200;
 
     function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
