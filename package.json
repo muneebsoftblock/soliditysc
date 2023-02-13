@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "run-blockchain": "npx ganache-cli",
+    "compile": "truffle compile",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
