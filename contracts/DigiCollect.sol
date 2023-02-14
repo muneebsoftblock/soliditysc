@@ -15,13 +15,17 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 // import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
+
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract DigiCollect is
     ERC721A("Digi Collect Labs", "DCL"),
+    ERC2981,
     Ownable,
-    ERC721AQueryable,
-    ERC2981
+    ERC721AQueryable
 {
     /*
     
@@ -85,6 +89,15 @@ contract DigiCollect is
             _safeMint(_sendNftsTo[i], _digiCollectQty);
     }
 
+    /*
+    /// @notice get all nfts of a person
+    function walletOfOwner(address _owner) external view returns (uint256[] memory) {
+        uint256 ownerTokenCount = balanceOf(_owner);
+        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+        for (uint256 i; i < ownerTokenCount; i++) tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
+        return tokenIds;
+    }
+    */
     // buy / mint DigiCollect Nfts here
     function buyDigiCollect(uint256 _digiCollectQty)
         external
@@ -95,6 +108,12 @@ contract DigiCollect is
         digiCollectAvailable(_digiCollectQty)
         mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
     {
+
+        const nextTokenId = totalSupply();
+        uint256[] memory tokenIds = new uint256[](_digiCollectQty);
+        for (uint256 i; i < ownerTokenCount; i++) tokenIds[i] = ;
+        deposit();
+
         _mint(msg.sender, _digiCollectQty);
     }
 
@@ -238,5 +257,150 @@ contract DigiCollect is
     {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
+    }
+}
+
+contract StakeDigiCollect is Ownable {
+    using EnumerableSet for EnumerableSet.UintSet;
+
+    address public ERC20_CONTRACT;
+    uint256 public EXPIRATION = 60 days; //expiry block number (avg 15s per block)
+
+    bool started;
+    uint256[7] public rewardRate;
+    mapping(uint256 => uint256) public expiration;
+    mapping(uint256 => uint256) public tokenRarity;
+    mapping(address => EnumerableSet.UintSet) private _deposits;
+    mapping(address => mapping(uint256 => uint256)) public depositBlocks;
+
+    constructor(address _erc20) {
+        ERC20_CONTRACT = _erc20;
+        // number of tokens Per day
+        rewardRate = [5, 6, 7, 10, 15, 50, 0];
+        started = false;
+    }
+
+    function setRate(uint256 _rarity, uint256 _rate) public onlyOwner {
+        rewardRate[_rarity] = _rate;
+    }
+
+    function setRarity(uint256 _tokenId, uint256 _rarity) public onlyOwner {
+        tokenRarity[_tokenId] = _rarity;
+    }
+
+    function setBatchRarity(uint256[] memory _tokenIds, uint256 _rarity)
+        public
+        onlyOwner
+    {
+        for (uint256 i; i < _tokenIds.length; i++) {
+            uint256 tokenId = _tokenIds[i];
+            tokenRarity[tokenId] = _rarity; 
+        }
+    }
+
+    function setExpiration(uint256 _expiration) public onlyOwner {
+        EXPIRATION = _expiration;
+    }
+
+    function toggleStart() public onlyOwner {
+        started = !started;
+    }
+
+    function setTokenAddress(address _tokenAddress) public onlyOwner {
+        // Used to change rewards token if needed
+        ERC20_CONTRACT = _tokenAddress;
+    }
+
+    function depositsOf(address account)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        EnumerableSet.UintSet storage depositSet = _deposits[account];
+        uint256[] memory tokenIds = new uint256[](depositSet.length());
+
+        for (uint256 i; i < depositSet.length(); i++) {
+            tokenIds[i] = depositSet.at(i);
+        }
+
+        return tokenIds;
+    }
+
+    function findRate(uint256 tokenId) public view returns (uint256 rate) {
+        uint256 rarity = tokenRarity[tokenId];
+        uint256 perDay = rewardRate[rarity];
+
+        // 6000 blocks per day
+        // perDay / 6000 = reward per block
+        // example just for understanding, values may differ
+
+        rate = (perDay * 1e18) / 6000;
+
+        return rate;
+    }
+
+    function calculateRewards(address account, uint256[] memory tokenIds)
+        public
+        view
+        returns (uint256[] memory rewards)
+    {
+        rewards = new uint256[](tokenIds.length);
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            uint256 rate = findRate(tokenId);
+            rewards[i] =
+                rate *
+                (_deposits[account].contains(tokenId) ? 1 : 0) *
+                (Math.min(block.number, expiration[tokenId]) -
+                    depositBlocks[account][tokenId]);
+        }
+    }
+
+    function claimRewards(uint256[] calldata tokenIds) public {
+        uint256 reward;
+
+        uint256[] memory rewards = calculateRewards(msg.sender, tokenIds);
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            reward += rewards[i];
+            uint256 curblock = Math.min(block.number, expiration[tokenId]);
+            depositBlocks[msg.sender][tokenId] = curblock;
+        }
+
+        if (reward > 0) {
+            DIGI(ERC20_CONTRACT).mintDIGI(msg.sender, reward);
+        }
+    }
+
+    function deposit(uint256[] calldata tokenIds) internal {
+        require(
+            owner() == msg.sender || started,
+            "StakeDigiCollect: Staking contract not started yet"
+        );
+
+        claimRewards(tokenIds);
+
+        uint256 unlockTime = block.timestamp + EXPIRATION;
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            expiration[tokenId] = unlockTime;
+            _deposits[msg.sender].add(tokenIds[i]);
+        }
+    }
+
+    function withdraw(uint256[] calldata tokenIds) external {
+        claimRewards(tokenIds);
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            require(
+                _deposits[msg.sender].contains(tokenIds[i]),
+                "StakeDigiCollect: Token not deposited"
+            );
+
+            _deposits[msg.sender].remove(tokenIds[i]);
+        }
     }
 }
