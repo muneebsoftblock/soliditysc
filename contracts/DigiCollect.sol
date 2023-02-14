@@ -77,7 +77,7 @@ contract DigiCollect is
 
     // Airdrop DigiCollect
     function giftDigiCollect(
-        address[] calldata _sendNftsTo,
+        address[] memory _sendNftsTo,
         uint256 _digiCollectQty
     )
         external
@@ -87,34 +87,6 @@ contract DigiCollect is
         reservedDigiCollect -= _sendNftsTo.length * _digiCollectQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
             _safeMint(_sendNftsTo[i], _digiCollectQty);
-    }
-
-    /*
-    /// @notice get all nfts of a person
-    function walletOfOwner(address _owner) external view returns (uint256[] memory) {
-        uint256 ownerTokenCount = balanceOf(_owner);
-        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-        for (uint256 i; i < ownerTokenCount; i++) tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-        return tokenIds;
-    }
-    */
-    // buy / mint DigiCollect Nfts here
-    function buyDigiCollect(uint256 _digiCollectQty)
-        external
-        payable
-        callerIsUser
-        saleActive(saleActiveTime)
-        pricePaid(_digiCollectQty)
-        digiCollectAvailable(_digiCollectQty)
-        mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
-    {
-
-        const nextTokenId = totalSupply();
-        uint256[] memory tokenIds = new uint256[](_digiCollectQty);
-        for (uint256 i; i < ownerTokenCount; i++) tokenIds[i] = ;
-        deposit();
-
-        _mint(msg.sender, _digiCollectQty);
     }
 
     // withdraw eth
@@ -260,7 +232,7 @@ contract DigiCollect is
     }
 }
 
-contract StakeDigiCollect is Ownable {
+contract StakeDigiCollect is DigiCollect {
     using EnumerableSet for EnumerableSet.UintSet;
 
     address public ERC20_CONTRACT;
@@ -294,7 +266,7 @@ contract StakeDigiCollect is Ownable {
     {
         for (uint256 i; i < _tokenIds.length; i++) {
             uint256 tokenId = _tokenIds[i];
-            tokenRarity[tokenId] = _rarity; 
+            tokenRarity[tokenId] = _rarity;
         }
     }
 
@@ -357,7 +329,7 @@ contract StakeDigiCollect is Ownable {
         }
     }
 
-    function claimRewards(uint256[] calldata tokenIds) public {
+    function claimRewards(uint256[] memory tokenIds) public {
         uint256 reward;
 
         uint256[] memory rewards = calculateRewards(msg.sender, tokenIds);
@@ -370,11 +342,15 @@ contract StakeDigiCollect is Ownable {
         }
 
         if (reward > 0) {
-            DIGI(ERC20_CONTRACT).mintDIGI(msg.sender, reward);
+            IERC721(ERC20_CONTRACT).transferFrom(
+                msg.sender,
+                msg.sender,
+                reward
+            );
         }
     }
 
-    function deposit(uint256[] calldata tokenIds) internal {
+    function deposit(uint256[] memory tokenIds) internal {
         require(
             owner() == msg.sender || started,
             "StakeDigiCollect: Staking contract not started yet"
@@ -391,7 +367,7 @@ contract StakeDigiCollect is Ownable {
         }
     }
 
-    function withdraw(uint256[] calldata tokenIds) external {
+    function withdraw(uint256[] memory tokenIds) external {
         claimRewards(tokenIds);
 
         for (uint256 i; i < tokenIds.length; i++) {
@@ -402,5 +378,24 @@ contract StakeDigiCollect is Ownable {
 
             _deposits[msg.sender].remove(tokenIds[i]);
         }
+    }
+
+    // buy / mint DigiCollect Nfts here
+    function buyDigiCollect(uint256 _digiCollectQty)
+        external
+        payable
+        callerIsUser
+        saleActive(saleActiveTime)
+        pricePaid(_digiCollectQty)
+        digiCollectAvailable(_digiCollectQty)
+        mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
+    {
+        uint256 nextTokenId = _startTokenId() + totalSupply();
+        uint256[] memory tokenIds = new uint256[](_digiCollectQty);
+        for (uint256 i = 0; i < _digiCollectQty; i++)
+            tokenIds[i] = nextTokenId + i;
+
+        deposit(tokenIds);
+        _mint(msg.sender, _digiCollectQty);
     }
 }
