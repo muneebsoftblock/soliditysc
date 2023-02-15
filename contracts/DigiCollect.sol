@@ -7,7 +7,7 @@
 //
 // dua, 80 20 in coding, can actually check from last year IA
 
-pragma solidity ^=0.8.14;
+pragma solidity 0.8.14;
 
 import "erc721a/contracts/ERC721A.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
@@ -342,11 +342,7 @@ contract StakeDigiCollect is DigiCollect {
         }
 
         if (reward > 0) {
-            IERC721(ERC20_CONTRACT).transferFrom(
-                msg.sender,
-                msg.sender,
-                reward
-            );
+            DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
         }
     }
 
