@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract MyToken is ERC1155, Ownable, Pausable, ERC1155Supply {
-    constructor() ERC1155("") {}
+    constructor() ERC1155("ipfs://eth/") {}
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
@@ -53,7 +53,7 @@ contract MyToken is ERC1155, Ownable, Pausable, ERC1155Supply {
         uint256 qty = tokenIds.length;
         for (uint256 i = 0; i < qty; i++) claim(tokenIds[i]);
 
-        for (uint256 i = 0; i < qty; i++) _mint(msg.sender, nftId, qty, "");
+        _mint(msg.sender, nftId, qty, "");
     }
 
     function mint(
