@@ -9,8 +9,11 @@
 
 pragma solidity 0.8.14;
 
+// For Local
 import "erc721a/contracts/ERC721A.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+
+// For Remix
 // import "erc721a@3.3.0/contracts/ERC721A.sol";
 // import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
@@ -240,7 +243,7 @@ contract DigiCollect is
     }
 }
 
-contract StakeDigiCollect is DigiCollect {
+contract DigiCollectStaking is DigiCollect {
     using EnumerableSet for EnumerableSet.UintSet;
 
     address public ERC20_CONTRACT;
