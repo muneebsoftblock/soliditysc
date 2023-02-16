@@ -282,7 +282,7 @@ contract DigiCollectStaking is DigiCollect {
         EXPIRATION = _expiration;
     }
 
-    function toggleStart() public onlyOwner {
+    function toggleStartStaking() public onlyOwner {
         started = !started;
     }
 
