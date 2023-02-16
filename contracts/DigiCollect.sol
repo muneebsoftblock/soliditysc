@@ -26,7 +26,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import "./DIGI.sol";
 
-contract DigiCollect is
+contract NFT is
     ERC721A("Digi Collect Labs", "DCL"),
     ERC2981,
     Ownable,
@@ -246,7 +246,7 @@ contract DigiCollect is
     }
 }
 
-contract DigiCollectStaking is DigiCollect {
+contract DigiCollect is NFT {
     using EnumerableSet for EnumerableSet.UintSet;
 
     address public ERC20_CONTRACT;
