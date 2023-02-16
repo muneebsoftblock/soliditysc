@@ -21,6 +21,8 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
+import "./DIGI.sol";
+
 contract DigiCollect is
     ERC721A("Digi Collect Labs", "DCL"),
     ERC2981,
@@ -348,11 +350,7 @@ contract StakeDigiCollect is DigiCollect {
         }
 
         if (reward > 0) {
-            IERC721(ERC20_CONTRACT).transferFrom(
-                msg.sender,
-                msg.sender,
-                reward
-            );
+            DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
         }
     }
 
