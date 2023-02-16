@@ -250,20 +250,14 @@ contract DigiCollectStaking is DigiCollect {
     using EnumerableSet for EnumerableSet.UintSet;
 
     address public ERC20_CONTRACT;
-    uint256 public EXPIRATION = 60 days; //expiry block number (avg 15s per block)
+    uint256 public EXPIRATION = 60 days;
 
-    bool started;
-    uint256[7] public rewardRate;
+    bool started = true;
+    uint256[7] public rewardRate = [5, 6, 7, 10, 15, 50, 0];
     mapping(uint256 => uint256) public expiration;
     mapping(uint256 => uint256) public tokenRarity;
     mapping(address => EnumerableSet.UintSet) private _deposits;
     mapping(address => mapping(uint256 => uint256)) public depositBlocks;
-
-    constructor() {
-        // number of tokens Per day
-        rewardRate = [5, 6, 7, 10, 15, 50, 0];
-        started = false;
-    }
 
     function setRate(uint256 _rarity, uint256 _rate) public onlyOwner {
         rewardRate[_rarity] = _rate;
@@ -283,6 +277,7 @@ contract DigiCollectStaking is DigiCollect {
         }
     }
 
+    /// @notice get reward on nft by default up to 60 days
     function setExpiration(uint256 _expiration) public onlyOwner {
         EXPIRATION = _expiration;
     }
