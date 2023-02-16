@@ -253,8 +253,7 @@ contract StakeDigiCollect is DigiCollect {
     mapping(address => EnumerableSet.UintSet) private _deposits;
     mapping(address => mapping(uint256 => uint256)) public depositBlocks;
 
-    constructor(address _erc20) {
-        ERC20_CONTRACT = _erc20;
+    constructor() {
         // number of tokens Per day
         rewardRate = [5, 6, 7, 10, 15, 50, 0];
         started = false;
