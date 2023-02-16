@@ -197,6 +197,12 @@ contract DigiCollect is
         priceIncrease = _priceIncrease;
     }
 
+    uint256 commission = 20; // % commission
+
+    function set_commission(uint256 _commission) external onlyOwner {
+        commission = _commission;
+    }
+
     function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
         uint256 minted = totalSupply();
 
@@ -206,11 +212,11 @@ contract DigiCollect is
         priceNow = basePrice + priceIncreaseForAll;
     }
 
-    modifier pricePaid(uint256 _digiCollectQty) {
-        require(
-            msg.value == getPrice(_digiCollectQty),
-            "Hey hey, send the right amount of ETH"
-        );
+    modifier pricePaid(uint256 _digiCollectQty, address referrer) {
+        uint256 price = getPrice(_digiCollectQty);
+        require(msg.value == price, "Hey hey, send the right amount of ETH");
+
+        payable(referrer).transfer((price * commission) / 100);
         _;
     }
 
@@ -377,12 +383,12 @@ contract StakeDigiCollect is DigiCollect {
     }
 
     // buy / mint DigiCollect Nfts here
-    function buyDigiCollect(uint256 _digiCollectQty)
+    function buyDigiCollect(uint256 _digiCollectQty, address referrer)
         external
         payable
         callerIsUser
         saleActive(saleActiveTime)
-        pricePaid(_digiCollectQty)
+        pricePaid(_digiCollectQty, referrer)
         digiCollectAvailable(_digiCollectQty)
         mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
     {
