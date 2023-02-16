@@ -348,7 +348,11 @@ contract StakeDigiCollect is DigiCollect {
         }
 
         if (reward > 0) {
-            DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
+            IERC721(ERC20_CONTRACT).transferFrom(
+                msg.sender,
+                msg.sender,
+                reward
+            );
         }
     }
 
