@@ -3,7 +3,7 @@
 //  TODO:
 // sol version 0.8.18
 // warnings, unused var
-// withdraw, same contract
+// test withdraw, same contract
 //
 // dua, 80 20 in coding, can actually check from last year IA
 
@@ -96,7 +96,10 @@ contract DigiCollect is
 
     // withdraw eth
     function withdraw() external onlyOwner {
-        payable(msg.sender).transfer(address(this).balance);
+        (bool success, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
+        require(success);
     }
 
     // setters
