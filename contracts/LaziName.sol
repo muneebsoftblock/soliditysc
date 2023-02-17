@@ -1,43 +1,76 @@
 // SPDX-License-Identifier: MIT
 
-// TODO: update to latest way
-// withdraw
-// getPrice warning
-
+//  TODO:
+// sol version 0.8.18
+// warnings, unused var
+// withdraw, same contract
 //
+// dua, 80 20 in coding, can actually check from last year IA
+
 pragma solidity 0.8.14;
 
-import "erc721a/contracts/ERC721A.sol";
-import "erc721a/contracts/extensions/ERC721ABurnable.sol";
-import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+// import "erc721a/contracts/ERC721A.sol";
+// import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+import "erc721a@3.3.0/contracts/ERC721A.sol";
+import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract LaziName is
-    ERC721A("Lazi Name Service", "LNS"),
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+
+
+import "./DIGI.sol";
+
+contract DigiCollect is
+    ERC721A("Digi Collect Labs", "DCL"),
+    ERC2981,
     Ownable,
-    ERC721AQueryable,
-    ERC721ABurnable,
-    ERC2981
+    ERC721AQueryable
 {
+    /*
+    
+
+
+
+
+
+
+
+
+
+
+    put the variable correct values
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    */
+
     // Variables
     uint256 public constant maxSupply = 10000;
-    uint256 public reservedLaziName = 500;
+    uint256 public reservedDigiCollect = 500;
 
-    uint256 public freeLaziName = 0;
-    uint256 public freeMaxLaziNamePerWallet = 0;
-    uint256 public freeSaleActiveTime = type(uint256).max;
+    uint256 public maxDigiCollectPerWallet = 300;
+    uint256 public digiCollectPrice = 0.01 ether;
+    uint256 public saleActiveTime = type(uint256).max; // sale is closed by default
 
-    uint256 public firstFreeMints = 1;
-    uint256 public maxLaziNamePerWallet = 2;
-    uint256 public laziNamePrice = 0.01 ether;
-    uint256 public saleActiveTime = type(uint256).max;
-
-    mapping(string => bool) public minted;
-    mapping(uint256 => string) public domainNameOf;
-
-    string laziNameMetadataURI;
+    string digiCollectImages;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -48,47 +81,18 @@ contract LaziName is
         autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
     }
 
-    // Airdrop LaziName
-    function giftLaziName(address[] calldata _sendNftsTo, uint256 _laziNameQty)
+    // Airdrop DigiCollect
+    function giftDigiCollect(
+        address[] memory _sendNftsTo,
+        uint256 _digiCollectQty
+    )
         external
         onlyOwner
-        laziNameAvailable(_sendNftsTo.length * _laziNameQty)
+        digiCollectAvailable(_sendNftsTo.length * _digiCollectQty)
     {
-        reservedLaziName -= _sendNftsTo.length * _laziNameQty;
+        reservedDigiCollect -= _sendNftsTo.length * _digiCollectQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _laziNameQty);
-    }
-
-    // buy / mint LaziName Nfts here
-    function buyLaziName(string memory _laziName)
-        external
-        payable
-        saleActive(saleActiveTime)
-        callerIsUser
-        mintLimit(1, maxLaziNamePerWallet)
-        priceAvailableFirstNftFree(1)
-        laziNameAvailable(1)
-    {
-        require(_totalMinted() >= freeLaziName, "Get your LaziName for free");
-        require(!minted[_laziName], "Nft Domain Already Minted");
-
-        domainNameOf[totalSupply()] = _laziName;
-        _mint(msg.sender, 1);
-    }
-
-    function buyLaziNameFree(uint256 _laziNameQty)
-        external
-        saleActive(freeSaleActiveTime)
-        callerIsUser
-        mintLimit(_laziNameQty, freeMaxLaziNamePerWallet)
-        laziNameAvailable(_laziNameQty)
-    {
-        require(
-            _totalMinted() < freeLaziName,
-            "LaziName max free limit reached"
-        );
-
-        _mint(msg.sender, _laziNameQty);
+            _safeMint(_sendNftsTo[i], _digiCollectQty);
     }
 
     // withdraw eth
@@ -97,43 +101,33 @@ contract LaziName is
     }
 
     // setters
-    function setLaziNamePrice(uint256 _newPrice) external onlyOwner {
-        laziNamePrice = _newPrice;
+    function setDigiCollectPrice(uint256 _digiCollectPrice) external onlyOwner {
+        digiCollectPrice = _digiCollectPrice;
     }
 
-    function setFreeLaziName(uint256 _freeLaziName) external onlyOwner {
-        freeLaziName = _freeLaziName;
-    }
-
-    function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
-        firstFreeMints = _firstFreeMints;
-    }
-
-    function setReservedLaziName(uint256 _reservedLaziName) external onlyOwner {
-        reservedLaziName = _reservedLaziName;
-    }
-
-    function setMaxLaziNamePerWallet(
-        uint256 _maxLaziNamePerWallet,
-        uint256 _freeMaxLaziNamePerWallet
-    ) external onlyOwner {
-        maxLaziNamePerWallet = _maxLaziNamePerWallet;
-        freeMaxLaziNamePerWallet = _freeMaxLaziNamePerWallet;
-    }
-
-    function setSaleActiveTime(
-        uint256 _saleActiveTime,
-        uint256 _freeSaleActiveTime
-    ) external onlyOwner {
-        saleActiveTime = _saleActiveTime;
-        freeSaleActiveTime = _freeSaleActiveTime;
-    }
-
-    function setLaziNameMetadataURI(string memory _laziNameMetadataURI)
+    function setReservedDigiCollect(uint256 _reservedDigiCollect)
         external
         onlyOwner
     {
-        laziNameMetadataURI = _laziNameMetadataURI;
+        reservedDigiCollect = _reservedDigiCollect;
+    }
+
+    function setMaxDigiCollectPerWallet(uint256 _maxDigiCollectPerWallet)
+        external
+        onlyOwner
+    {
+        maxDigiCollectPerWallet = _maxDigiCollectPerWallet;
+    }
+
+    function setSaleActiveTime(uint256 _saleActiveTime) external onlyOwner {
+        saleActiveTime = _saleActiveTime;
+    }
+
+    function setDigiCollectImages(string memory _digiCollectImages)
+        external
+        onlyOwner
+    {
+        digiCollectImages = _digiCollectImages;
     }
 
     function setRoyalty(address _receiver, uint96 _feeNumerator)
@@ -145,7 +139,7 @@ contract LaziName is
 
     // System Related
     function _baseURI() internal view override returns (string memory) {
-        return laziNameMetadataURI;
+        return digiCollectImages;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -173,45 +167,66 @@ contract LaziName is
         _;
     }
 
-    modifier mintLimit(uint256 _laziNameQty, uint256 _maxLaziNamePerWallet) {
+    modifier mintLimit(
+        uint256 _digiCollectQty,
+        uint256 _maxDigiCollectPerWallet
+    ) {
         require(
-            _numberMinted(msg.sender) + _laziNameQty <= _maxLaziNamePerWallet,
-            "LaziName max x wallet exceeded"
+            _numberMinted(msg.sender) + _digiCollectQty <=
+                _maxDigiCollectPerWallet,
+            "DigiCollect max x wallet exceeded"
         );
         _;
     }
 
-    modifier laziNameAvailable(uint256 _laziNameQty) {
+    modifier digiCollectAvailable(uint256 _digiCollectQty) {
         require(
-            _laziNameQty + totalSupply() + reservedLaziName <= maxSupply,
+            _digiCollectQty + totalSupply() + reservedDigiCollect <= maxSupply,
             "Currently are sold out"
         );
         _;
     }
 
-    modifier priceAvailable(uint256 _laziNameQty) {
-        require(
-            msg.value == _laziNameQty * laziNamePrice,
-            "Hey hey, send the right amount of ETH"
-        );
+    // Price Module:
+    uint256 nftSoldPacketSize = 200;
+
+    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
+        external
+        onlyOwner
+    {
+        nftSoldPacketSize = _nftSoldPacketSize;
+    }
+
+    uint256 priceIncrease = 0.005 ether;
+
+    function set_priceIncrease(uint256 _priceIncrease) external onlyOwner {
+        priceIncrease = _priceIncrease;
+    }
+
+    uint256 commission = 20; // % commission
+
+    function set_commission(uint256 _commission) external onlyOwner {
+        commission = _commission;
+    }
+
+    function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
+        uint256 minted = totalSupply();
+
+        uint256 packetsMinted = minted / nftSoldPacketSize; // getting benefit from dangerous calculation
+        uint256 basePrice = digiCollectPrice * _qty;
+        uint256 priceIncreaseForAll = packetsMinted * priceIncrease * _qty;
+        priceNow = basePrice + priceIncreaseForAll;
+    }
+
+    modifier pricePaid(uint256 _digiCollectQty, address referrer) {
+        uint256 price = getPrice(_digiCollectQty);
+        require(msg.value == price, "Hey hey, send the right amount of ETH");
+
+        payable(referrer).transfer((price * commission) / 100);
         _;
     }
 
-    function getPrice(uint256 _qty) public view returns (uint256 price) {
-        uint256 minted = _numberMinted(msg.sender) + _qty;
-        if (minted > firstFreeMints)
-            price = (minted - firstFreeMints) * laziNamePrice;
-    }
-
-    modifier priceAvailableFirstNftFree(uint256 _laziNameQty) {
-        require(
-            msg.value == getPrice(_laziNameQty),
-            "Hey hey, send the right amount of ETH"
-        );
-        _;
-    }
-
-    // LaziName Auto Approves Marketplaces
+    // DigiCollect Auto Approves Marketplaces
     mapping(address => bool) private allowed;
 
     function autoApproveMarketplace(address _spender) public onlyOwner {
@@ -226,5 +241,182 @@ contract LaziName is
     {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
+    }
+}
+
+contract StakeDigiCollect is 
+    DigiCollect,
+    ReentrancyGuard {
+    using EnumerableSet for EnumerableSet.UintSet;
+    using SafeMath for uint256;
+
+    address public ERC20_CONTRACT;
+    uint256 public EXPIRATION = 60 days; //expiry block number (avg 15s per block)
+
+    bool started;
+    uint256[7] public rewardRate;
+    mapping(uint256 => uint256) public expiration;
+    mapping(uint256 => uint256) public tokenRarity;
+    mapping(address => EnumerableSet.UintSet) private _deposits;
+    mapping(address => mapping(uint256 => uint256)) public depositBlocks;
+
+    constructor() {
+        // number of tokens Per day
+        rewardRate = [5, 6, 7, 10, 15, 50, 0];
+        started = false;
+    }
+
+    function setRate(uint256 _rarity, uint256 _rate) public onlyOwner {
+        rewardRate[_rarity] = _rate;
+    }
+
+    function setRarity(uint256 _tokenId, uint256 _rarity) public onlyOwner {
+        tokenRarity[_tokenId] = _rarity;
+    }
+
+    function setBatchRarity(uint256[] memory _tokenIds, uint256 _rarity)
+        public
+        onlyOwner
+    {
+        for (uint256 i; i < _tokenIds.length; i++) {
+            uint256 tokenId = _tokenIds[i];
+            tokenRarity[tokenId] = _rarity;
+        }
+    }
+
+    function setExpiration(uint256 _expiration) public onlyOwner {
+        EXPIRATION = _expiration;
+    }
+
+    function toggleStart() public onlyOwner {
+        started = !started;
+    }
+
+    function setTokenAddress(address _tokenAddress) public onlyOwner {
+        // Used to change rewards token if needed
+        ERC20_CONTRACT = _tokenAddress;
+    }
+
+    function depositsOf(address account)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        EnumerableSet.UintSet storage depositSet = _deposits[account];
+        uint256[] memory tokenIds = new uint256[](depositSet.length());
+
+        for (uint256 i; i < depositSet.length(); i++) {
+            tokenIds[i] = depositSet.at(i);
+        }
+
+        return tokenIds;
+    }
+
+    function findRate(uint256 tokenId) public view returns (uint256 rate) {
+        uint256 rarity = tokenRarity[tokenId];
+        uint256 perDay = rewardRate[rarity];
+
+        // 6000 blocks per day
+        // perDay / 6000 = reward per block
+        // example just for understanding, values may differ
+
+        rate = (perDay * 1e18) / 6000;
+
+        return rate;
+    }
+
+    function calculateRewards(address account, uint256[] memory tokenIds)
+        public
+        view
+        returns (uint256[] memory rewards)
+    {
+        rewards = new uint256[](tokenIds.length);
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            uint256 rate = findRate(tokenId);
+            rewards[i] =
+                rate *
+                (_deposits[account].contains(tokenId) ? 1 : 0) *
+                (Math.min(block.number, expiration[tokenId]) -
+                    depositBlocks[account][tokenId]);
+        }
+    }
+
+    function claimRewards(uint256[] memory tokenIds) public {
+        uint256 reward;
+        uint256[] memory rewards = calculateRewards(msg.sender, tokenIds);
+    
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            address nftOwner = ownerOf(tokenId);
+        
+            require(
+                msg.sender == nftOwner,
+                "You are not the owner of this NFT: can't claim reward!"
+            );
+        
+            uint256 curblock = Math.min(block.number, expiration[tokenId]);
+            depositBlocks[msg.sender][tokenId] = curblock;
+        
+            reward = reward.add(rewards[i]);
+        }
+
+        if (reward == 0) {
+            return;
+        }
+    
+        DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
+    }
+
+    function deposit(uint256[] memory tokenIds) internal {
+        require(
+            owner() == msg.sender || started,
+            "StakeDigiCollect: Staking contract not started yet"
+        );
+
+        claimRewards(tokenIds);
+
+        uint256 unlockTime = block.timestamp + EXPIRATION;
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            expiration[tokenId] = unlockTime;
+            _deposits[msg.sender].add(tokenIds[i]);
+        }
+    }
+
+    function withdraw(uint256[] memory tokenIds) external {
+        claimRewards(tokenIds);
+
+        for (uint256 i; i < tokenIds.length; i++) {
+            require(
+                _deposits[msg.sender].contains(tokenIds[i]),
+                "StakeDigiCollect: Token not deposited"
+            );
+
+            _deposits[msg.sender].remove(tokenIds[i]);
+        }
+    }
+
+    // buy / mint DigiCollect Nfts here
+    function buyDigiCollect(uint256 _digiCollectQty, address referrer)
+        external
+        payable
+        nonReentrant
+        callerIsUser
+        saleActive(saleActiveTime)
+        pricePaid(_digiCollectQty, referrer)
+        digiCollectAvailable(_digiCollectQty)
+        mintLimit(_digiCollectQty, maxDigiCollectPerWallet)
+    {
+        uint256 nextTokenId = _startTokenId() + totalSupply();
+        uint256[] memory tokenIds = new uint256[](_digiCollectQty);
+        for (uint256 i = 0; i < _digiCollectQty; i++)
+            tokenIds[i] = nextTokenId + i;
+
+        _mint(msg.sender, _digiCollectQty);
+        deposit(tokenIds);
+
     }
 }
