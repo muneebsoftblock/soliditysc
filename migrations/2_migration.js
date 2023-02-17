@@ -1,5 +1,5 @@
-const MoonHedgehogs = artifacts.require('MoonHedgehogs');
+const LaziName = artifacts.require('LaziName');
 
 module.exports = function (deployer) {
-  deployer.deploy(MoonHedgehogs);
+  deployer.deploy(LaziName);
 };
