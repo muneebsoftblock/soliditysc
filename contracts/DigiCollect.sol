@@ -23,6 +23,9 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 
 import "./DIGI.sol";
 
@@ -246,8 +249,13 @@ contract NFT is
     }
 }
 
-contract DigiCollect is NFT {
+contract DigiCollect is 
+    NFT,
+    ReentrancyGuard
+    {
     using EnumerableSet for EnumerableSet.UintSet;
+    using SafeMath for uint256;
+
 
     address public ERC20_CONTRACT;
     uint256 public EXPIRATION = 60 days;
@@ -344,14 +352,25 @@ contract DigiCollect is NFT {
 
         for (uint256 i; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
-            reward += rewards[i];
+            address nftOwner = ownerOf(tokenId);
+
+            require(
+                msg.sender == nftOwner,
+                "You are not the owner of this NFT: can't claim reward!"
+            );
+
             uint256 curblock = Math.min(block.number, expiration[tokenId]);
             depositBlocks[msg.sender][tokenId] = curblock;
+
+            reward = reward.add(rewards[i]);
+
         }
 
-        if (reward > 0) {
-            DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
+        if (reward == 0) {
+            return;
         }
+    
+        DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
     }
 
     function deposit(uint256[] memory tokenIds) internal {
@@ -388,6 +407,7 @@ contract DigiCollect is NFT {
     function buyDigiCollect(uint256 _digiCollectQty, address referrer)
         external
         payable
+        nonReentrant
         callerIsUser
         saleActive(saleActiveTime)
         pricePaid(_digiCollectQty, referrer)
@@ -399,7 +419,7 @@ contract DigiCollect is NFT {
         for (uint256 i = 0; i < _digiCollectQty; i++)
             tokenIds[i] = nextTokenId + i;
 
-        deposit(tokenIds);
         _mint(msg.sender, _digiCollectQty);
+        deposit(tokenIds);
     }
 }
