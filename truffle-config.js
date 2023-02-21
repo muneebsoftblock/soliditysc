@@ -17,6 +17,12 @@ module.exports = {
         return new HDWalletProvider(MNEMONIC, 'https://mainnet.infura.io/v3/' + INFURA_TOKEN);
       },
     },
+    goerli: {
+      network_id: '5',
+      provider: () => {
+        return new HDWalletProvider(MNEMONIC, 'https://goerli.infura.io/v3/' + INFURA_TOKEN);
+      },
+    },
   },
   mocha: {
     reporter: 'eth-gas-reporter',
