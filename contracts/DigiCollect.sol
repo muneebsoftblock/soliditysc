@@ -35,35 +35,6 @@ contract NFT is
     Ownable,
     ERC721AQueryable
 {
-    /*
-    
-
-
-
-
-
-
-
-
-
-
-    put the variable correct values
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-    */
-
     // Variables
     uint256 public constant maxSupply = 10000;
     uint256 public reservedDigiCollect = 500;
@@ -193,7 +164,7 @@ contract NFT is
     }
 
     // Price Module:
-    uint256 nftSoldPacketSize = 200;
+    uint256 public nftSoldPacketSize = 200;
 
     function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
         external
@@ -202,7 +173,7 @@ contract NFT is
         nftSoldPacketSize = _nftSoldPacketSize;
     }
 
-    uint256 priceIncrease = 0.005 ether;
+    uint256 public priceIncrease = 0.005 ether;
 
     function set_priceIncrease(uint256 _priceIncrease) external onlyOwner {
         priceIncrease = _priceIncrease;
