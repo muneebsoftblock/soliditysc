@@ -20,6 +20,7 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
     }
 
     // 5 DIGI per day so 86400 sec = 5 digi, 1 sec = 0.000057 DIGI
+    // 5 DIGI per 6400 blocks, 1 block = 0.00078125 DIGI, it 100x more
 
     const tokenId = 1;
     const reward = "" + (await sc.calculateRewards(alice, [tokenId]));
