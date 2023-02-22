@@ -274,8 +274,8 @@ contract DigiCollect is NFT, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't claim reward!");
-            require(_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token not deposited");
+            require(msg.sender == nftOwner, "You are not the owner of this NFT");
+            require(_deposits[msg.sender].contains(tokenId), "Token not deposited");
 
             uint256 curblock = Math.min(block.number, expiration[tokenId]);
             depositBlocks[msg.sender][tokenId] = curblock;
@@ -291,20 +291,18 @@ contract DigiCollect is NFT, ReentrancyGuard {
     }
 
     function deposit(uint256[] memory tokenIds) public {
-        require(started, "StakeDigiCollect: Staking contract not started yet");
+        require(started, "Staking contract not started yet");
 
-        claimRewards(tokenIds);
-
-        uint256 unlockTime = block.timestamp + EXPIRATION;
+        uint256 unlockBlock = block.number + EXPIRATION;
 
         for (uint256 i; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't deposit!");
-            require(!_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token Already Deposited");
+            require(msg.sender == nftOwner, "You are not the owner of this NFT");
+            require(!_deposits[msg.sender].contains(tokenId), "Token Already Deposited");
 
-            expiration[tokenId] = unlockTime;
+            expiration[tokenId] = unlockBlock;
             _deposits[msg.sender].add(tokenId);
         }
     }
@@ -316,8 +314,9 @@ contract DigiCollect is NFT, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't withdraw!");
-            require(_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token not deposited");
+            require(msg.sender == nftOwner, "You are not the owner of this NFT");
+            require(_deposits[msg.sender].contains(tokenId), "Token not deposited");
+            require(expiration[tokenId] < block.number, "Try again later");
 
             _deposits[msg.sender].remove(tokenId);
         }
@@ -345,9 +344,10 @@ contract DigiCollect is NFT, ReentrancyGuard {
     function _beforeTokenTransfers(
         address from,
         address,
-        uint256 startTokenId,
+        uint256 tokenId,
         uint256
     ) internal virtual override {
-        require(!_deposits[from].contains(startTokenId), "StakeDigiCollect: Token is staked. You can not transfer.");
+        require(!_deposits[from].contains(tokenId), "Token is staked. You can not transfer.");
+        require(expiration[tokenId] < block.number, "Try again later");
     }
 }
