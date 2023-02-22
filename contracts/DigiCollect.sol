@@ -224,7 +224,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
     using SafeMath for uint256;
 
     address public ERC20_CONTRACT;
-    uint256 public EXPIRATION = 60 days;
+    uint256 public EXPIRATION = 60 * 6400; // 6400 blocks per day
 
     bool started = true;
     uint256[7] public rewardRate = [5, 6, 7, 10, 15, 50, 0];
@@ -284,11 +284,11 @@ contract DigiCollect is NFT, ReentrancyGuard {
         uint256 rarity = tokenRarity[tokenId];
         uint256 perDay = rewardRate[rarity];
 
-        // 6000 blocks per day
-        // perDay / 6000 = reward per block
+        // 6400 blocks per day
+        // perDay / 6400 = reward per block
         // example just for understanding, values may differ
 
-        rate = (perDay * 1e18) / 6000;
+        rate = (perDay * 1e18) / 6400;
 
         return rate;
     }
