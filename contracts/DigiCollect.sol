@@ -28,12 +28,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./DIGI.sol";
 
-contract NFT is
-    ERC721A("Digi Collect Labs", "DCL"),
-    ERC2981,
-    Ownable,
-    ERC721AQueryable
-{
+contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQueryable {
     // Variables
     uint256 public constant maxSupply = 10000;
     uint256 public reservedDigiCollect = 500;
@@ -54,24 +49,18 @@ contract NFT is
     }
 
     // Airdrop DigiCollect
-    function giftDigiCollect(
-        address[] memory _sendNftsTo,
-        uint256 _digiCollectQty
-    )
+    function giftDigiCollect(address[] memory _sendNftsTo, uint256 _digiCollectQty)
         external
         onlyOwner
         digiCollectAvailable(_sendNftsTo.length * _digiCollectQty)
     {
         reservedDigiCollect -= _sendNftsTo.length * _digiCollectQty;
-        for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _digiCollectQty);
+        for (uint256 i = 0; i < _sendNftsTo.length; i++) _safeMint(_sendNftsTo[i], _digiCollectQty);
     }
 
     // withdraw eth
     function withdraw() external onlyOwner {
-        (bool success, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success);
     }
 
@@ -80,17 +69,11 @@ contract NFT is
         digiCollectPrice = _digiCollectPrice;
     }
 
-    function setReservedDigiCollect(uint256 _reservedDigiCollect)
-        external
-        onlyOwner
-    {
+    function setReservedDigiCollect(uint256 _reservedDigiCollect) external onlyOwner {
         reservedDigiCollect = _reservedDigiCollect;
     }
 
-    function setMaxDigiCollectPerWallet(uint256 _maxDigiCollectPerWallet)
-        external
-        onlyOwner
-    {
+    function setMaxDigiCollectPerWallet(uint256 _maxDigiCollectPerWallet) external onlyOwner {
         maxDigiCollectPerWallet = _maxDigiCollectPerWallet;
     }
 
@@ -98,17 +81,11 @@ contract NFT is
         saleActiveTime = _saleActiveTime;
     }
 
-    function setDigiCollectImages(string memory _digiCollectImages)
-        external
-        onlyOwner
-    {
+    function setDigiCollectImages(string memory _digiCollectImages) external onlyOwner {
         digiCollectImages = _digiCollectImages;
     }
 
-    function setRoyalty(address _receiver, uint96 _feeNumerator)
-        public
-        onlyOwner
-    {
+    function setRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
@@ -142,33 +119,23 @@ contract NFT is
         _;
     }
 
-    modifier mintLimit(
-        uint256 _digiCollectQty,
-        uint256 _maxDigiCollectPerWallet
-    ) {
+    modifier mintLimit(uint256 _digiCollectQty, uint256 _maxDigiCollectPerWallet) {
         require(
-            _numberMinted(msg.sender) + _digiCollectQty <=
-                _maxDigiCollectPerWallet,
+            _numberMinted(msg.sender) + _digiCollectQty <= _maxDigiCollectPerWallet,
             "DigiCollect max x wallet exceeded"
         );
         _;
     }
 
     modifier digiCollectAvailable(uint256 _digiCollectQty) {
-        require(
-            _digiCollectQty + totalSupply() + reservedDigiCollect <= maxSupply,
-            "Currently are sold out"
-        );
+        require(_digiCollectQty + totalSupply() + reservedDigiCollect <= maxSupply, "Currently are sold out");
         _;
     }
 
     // Price Module:
     uint256 public nftSoldPacketSize = 200;
 
-    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
-        external
-        onlyOwner
-    {
+    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize) external onlyOwner {
         nftSoldPacketSize = _nftSoldPacketSize;
     }
 
@@ -208,12 +175,7 @@ contract NFT is
         allowed[_spender] = !allowed[_spender];
     }
 
-    function isApprovedForAll(address _owner, address _operator)
-        public
-        view
-        override(ERC721A, IERC721)
-        returns (bool)
-    {
+    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
@@ -241,10 +203,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
         tokenRarity[_tokenId] = _rarity;
     }
 
-    function setBatchRarity(uint256[] memory _tokenIds, uint256 _rarity)
-        public
-        onlyOwner
-    {
+    function setBatchRarity(uint256[] memory _tokenIds, uint256 _rarity) public onlyOwner {
         for (uint256 i; i < _tokenIds.length; i++) {
             uint256 tokenId = _tokenIds[i];
             tokenRarity[tokenId] = _rarity;
@@ -265,11 +224,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
         ERC20_CONTRACT = _tokenAddress;
     }
 
-    function depositsOf(address account)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function depositsOf(address account) external view returns (uint256[] memory) {
         EnumerableSet.UintSet storage depositSet = _deposits[account];
         uint256[] memory tokenIds = new uint256[](depositSet.length());
 
@@ -306,8 +261,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
             rewards[i] =
                 rate *
                 (_deposits[account].contains(tokenId) ? 1 : 0) *
-                (Math.min(block.number, expiration[tokenId]) -
-                    depositBlocks[account][tokenId]);
+                (Math.min(block.number, expiration[tokenId]) - depositBlocks[account][tokenId]);
         }
     }
 
@@ -320,14 +274,8 @@ contract DigiCollect is NFT, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(
-                msg.sender == nftOwner,
-                "You are not the owner of this NFT: can't claim reward!"
-            );
-            require(
-                _deposits[msg.sender].contains(tokenId),
-                "StakeDigiCollect: Token not deposited"
-            );
+            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't claim reward!");
+            require(_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token not deposited");
 
             uint256 curblock = Math.min(block.number, expiration[tokenId]);
             depositBlocks[msg.sender][tokenId] = curblock;
@@ -353,14 +301,8 @@ contract DigiCollect is NFT, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(
-                msg.sender == nftOwner,
-                "You are not the owner of this NFT: can't deposit!"
-            );
-            require(
-                !_deposits[msg.sender].contains(tokenId),
-                "StakeDigiCollect: Token Already Deposited"
-            );
+            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't deposit!");
+            require(!_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token Already Deposited");
 
             expiration[tokenId] = unlockTime;
             _deposits[msg.sender].add(tokenId);
@@ -374,14 +316,8 @@ contract DigiCollect is NFT, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
 
             address nftOwner = ownerOf(tokenId);
-            require(
-                msg.sender == nftOwner,
-                "You are not the owner of this NFT: can't withdraw!"
-            );
-            require(
-                _deposits[msg.sender].contains(tokenId),
-                "StakeDigiCollect: Token not deposited"
-            );
+            require(msg.sender == nftOwner, "You are not the owner of this NFT: can't withdraw!");
+            require(_deposits[msg.sender].contains(tokenId), "StakeDigiCollect: Token not deposited");
 
             _deposits[msg.sender].remove(tokenId);
         }
@@ -400,8 +336,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
     {
         uint256 nextTokenId = _startTokenId() + totalSupply();
         uint256[] memory tokenIds = new uint256[](_digiCollectQty);
-        for (uint256 i = 0; i < _digiCollectQty; i++)
-            tokenIds[i] = nextTokenId + i;
+        for (uint256 i = 0; i < _digiCollectQty; i++) tokenIds[i] = nextTokenId + i;
 
         _mint(msg.sender, _digiCollectQty);
         deposit(tokenIds);
@@ -413,9 +348,6 @@ contract DigiCollect is NFT, ReentrancyGuard {
         uint256 startTokenId,
         uint256
     ) internal virtual override {
-        require(
-            !_deposits[from].contains(startTokenId),
-            "StakeDigiCollect: Token is staked. You can not transfer."
-        );
+        require(!_deposits[from].contains(startTokenId), "StakeDigiCollect: Token is staked. You can not transfer.");
     }
 }
