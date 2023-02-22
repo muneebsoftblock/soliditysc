@@ -26,7 +26,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
 import "./DIGI.sol";
 
 contract NFT is
@@ -220,13 +219,9 @@ contract NFT is
     }
 }
 
-contract DigiCollect is 
-    NFT,
-    ReentrancyGuard
-    {
+contract DigiCollect is NFT, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.UintSet;
     using SafeMath for uint256;
-
 
     address public ERC20_CONTRACT;
     uint256 public EXPIRATION = 60 days;
@@ -323,32 +318,32 @@ contract DigiCollect is
 
         for (uint256 i; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
-            address nftOwner = ownerOf(tokenId);
 
+            address nftOwner = ownerOf(tokenId);
             require(
                 msg.sender == nftOwner,
                 "You are not the owner of this NFT: can't claim reward!"
+            );
+            require(
+                _deposits[msg.sender].contains(tokenId),
+                "StakeDigiCollect: Token not deposited"
             );
 
             uint256 curblock = Math.min(block.number, expiration[tokenId]);
             depositBlocks[msg.sender][tokenId] = curblock;
 
             reward = reward.add(rewards[i]);
-
         }
 
         if (reward == 0) {
             return;
         }
-    
+
         DIGI(ERC20_CONTRACT).mint(msg.sender, reward);
     }
 
-    function deposit(uint256[] memory tokenIds) internal {
-        require(
-            owner() == msg.sender || started,
-            "StakeDigiCollect: Staking contract not started yet"
-        );
+    function deposit(uint256[] memory tokenIds) public {
+        require(started, "StakeDigiCollect: Staking contract not started yet");
 
         claimRewards(tokenIds);
 
@@ -356,21 +351,39 @@ contract DigiCollect is
 
         for (uint256 i; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
+
+            address nftOwner = ownerOf(tokenId);
+            require(
+                msg.sender == nftOwner,
+                "You are not the owner of this NFT: can't deposit!"
+            );
+            require(
+                !_deposits[msg.sender].contains(tokenId),
+                "StakeDigiCollect: Token Already Deposited"
+            );
+
             expiration[tokenId] = unlockTime;
-            _deposits[msg.sender].add(tokenIds[i]);
+            _deposits[msg.sender].add(tokenId);
         }
     }
 
-    function withdraw(uint256[] memory tokenIds) external {
+    function withdraw(uint256[] memory tokenIds) public {
         claimRewards(tokenIds);
 
         for (uint256 i; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+
+            address nftOwner = ownerOf(tokenId);
             require(
-                _deposits[msg.sender].contains(tokenIds[i]),
+                msg.sender == nftOwner,
+                "You are not the owner of this NFT: can't withdraw!"
+            );
+            require(
+                _deposits[msg.sender].contains(tokenId),
                 "StakeDigiCollect: Token not deposited"
             );
 
-            _deposits[msg.sender].remove(tokenIds[i]);
+            _deposits[msg.sender].remove(tokenId);
         }
     }
 
@@ -392,5 +405,17 @@ contract DigiCollect is
 
         _mint(msg.sender, _digiCollectQty);
         deposit(tokenIds);
+    }
+
+    function _beforeTokenTransfers(
+        address from,
+        address,
+        uint256 startTokenId,
+        uint256
+    ) internal virtual override {
+        require(
+            !_deposits[from].contains(startTokenId),
+            "StakeDigiCollect: Token is staked. You can not transfer."
+        );
     }
 }
