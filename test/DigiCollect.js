@@ -2,6 +2,8 @@ const DIGI = artifacts.require("DIGI");
 const DigiCollect = artifacts.require("DigiCollect");
 const fromWei = web3.utils.fromWei;
 const toWei = web3.utils.toWei;
+const truffleAssert = require("truffle-assertions");
+
 const advanceBlock = () => {
   return new Promise((resolve, reject) => {
     web3.currentProvider.send(
@@ -37,7 +39,7 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
     await digiCollect.setSaleActiveTime(0, { from: owner });
   });
 
-  it("Case 1: Buy 1 Nft, after 24 hours reward is 5 digi, collect 5 digi", async () => {
+  it("Case 1: Buy 1 Nft, after 24 hours reward is 5 digi, collect 5 digi, nft can not be transferred because its staked.", async () => {
     const qty = 1;
     const from = alice;
     const price = await digiCollect.getPrice(qty);
@@ -60,5 +62,11 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
       const reward = fromWei("" + (await digi.balanceOf(alice)));
       assert.equal(reward, 2 * Number("0.00078125"));
     }
+
+    // expect revert
+    try {
+      await digiCollect.transferFrom(alice, bob, tokenId, { from: alice });
+      assert(false, "Should Revert");
+    } catch (e) {}
   });
 });
