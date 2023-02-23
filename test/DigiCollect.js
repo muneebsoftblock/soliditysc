@@ -23,48 +23,32 @@ const advanceBlock = () => {
 };
 
 contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
-  it("should assert true", async () => {
+  it("Case 1: Buy 1 Nft, after 24 hours reward is 5 digi, collect 5 digi", async () => {
     const sc = await DigiCollect.new({ from: owner });
-
     await sc.setSaleActiveTime(0, { from: owner }); // write
 
-    {
-      console.log(`------block ${await web3.eth.getBlockNumber()}`);
-      const tokenId = 1;
-      const reward = "" + (await sc.calculateRewards(alice, [tokenId]));
-      console.log(`reward ${fromWei(reward)} DIGI`);
-    }
+    const qty = 1;
+    const from = alice;
+    const price = await sc.getPrice(qty);
+    await sc.buyDigiCollect(qty, ref1, {
+      from,
+      value: price,
+    });
 
-    {
-      const qty = 1;
-      const from = alice;
-      const price = await sc.getPrice(qty);
-      await sc.buyDigiCollect(qty, ref1, {
-        from,
-        value: price,
-      });
-    }
-
-    // 5 DIGI per day so 86400 sec = 5 digi, 1 sec = 0.000057 DIGI
     // 5 DIGI per 6400 blocks, 1 block = 0.00078125 DIGI, it 100x more
+    const tokenId = 1;
 
     await advanceBlock();
     {
-      console.log(`------block ${await web3.eth.getBlockNumber()}`);
-      const tokenId = 1;
-      const reward = "" + (await sc.calculateRewards(alice, [tokenId]));
-      console.log(`reward ${fromWei(reward)} DIGI`);
-    }
-    await advanceBlock();
-    {
-      console.log(`------block ${await web3.eth.getBlockNumber()}`);
-      const tokenId = 1;
-      const reward = "" + (await sc.calculateRewards(alice, [tokenId]));
-      console.log(`reward ${fromWei(reward)} DIGI`);
+      const reward = fromWei("" + (await sc.calculateRewards(alice, [tokenId])));
+      assert.equal(reward, "0.00078125");
     }
 
-    // assert(Number(reward) > 0.000057, "no ok");
+    // await sc.claimRewards([tokenId]);
 
-    await sc.withdraw({ from: owner });
+    // {
+    //   const reward = fromWei("" + (await sc.calculateRewards(alice, [tokenId])));
+    //   assert.equal(reward, "0");
+    // }
   });
 });
