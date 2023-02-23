@@ -31,7 +31,6 @@ import "./DIGI.sol";
 contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQueryable {
     // Variables
     uint256 public constant maxSupply = 10000;
-    uint256 public reservedDigiCollect = 500;
 
     uint256 public maxDigiCollectPerWallet = 300;
     uint256 public digiCollectPrice = 0.01 ether;
@@ -54,7 +53,6 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
         onlyOwner
         digiCollectAvailable(_sendNftsTo.length * _digiCollectQty)
     {
-        reservedDigiCollect -= _sendNftsTo.length * _digiCollectQty;
         for (uint256 i = 0; i < _sendNftsTo.length; i++) _safeMint(_sendNftsTo[i], _digiCollectQty);
     }
 
@@ -67,10 +65,6 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
     // setters
     function setDigiCollectPrice(uint256 _digiCollectPrice) external onlyOwner {
         digiCollectPrice = _digiCollectPrice;
-    }
-
-    function setReservedDigiCollect(uint256 _reservedDigiCollect) external onlyOwner {
-        reservedDigiCollect = _reservedDigiCollect;
     }
 
     function setMaxDigiCollectPerWallet(uint256 _maxDigiCollectPerWallet) external onlyOwner {
@@ -128,7 +122,7 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
     }
 
     modifier digiCollectAvailable(uint256 _digiCollectQty) {
-        require(_digiCollectQty + totalSupply() + reservedDigiCollect <= maxSupply, "Currently are sold out");
+        require(_digiCollectQty + totalSupply() <= maxSupply, "Currently are sold out");
         _;
     }
 
