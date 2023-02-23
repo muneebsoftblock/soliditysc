@@ -9,22 +9,19 @@
 
 pragma solidity 0.8.14;
 
-// For Local
-import "erc721a/contracts/ERC721A.sol";
-import "erc721a/contracts/extensions/ERC721AQueryable.sol";
-
 // For Remix
 // import "erc721a@3.3.0/contracts/ERC721A.sol";
 // import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
 
+// For Local
+import "erc721a/contracts/ERC721A.sol";
+import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "./DIGI.sol";
 
@@ -183,7 +180,6 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
 
 contract DigiCollect is NFT, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.UintSet;
-    using SafeMath for uint256;
 
     address public ERC20_CONTRACT;
     uint256 public EXPIRATION = 60 * blocksPerDay; // 60 days
@@ -279,7 +275,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
 
             depositBlocks[msg.sender][tokenId] = block.number;
 
-            reward = reward.add(rewards[i]);
+            reward += rewards[i];
         }
 
         if (reward == 0) {
