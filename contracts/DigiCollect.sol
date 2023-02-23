@@ -267,7 +267,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
             rewards[i] =
                 rate *
                 (_deposits[account].contains(tokenId) ? 1 : 0) *
-                (Math.min(block.number, expiration[tokenId]) - depositBlocks[account][tokenId]);
+                (block.number - depositBlocks[account][tokenId]);
         }
     }
 
@@ -283,8 +283,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
             require(msg.sender == nftOwner, "You are not the owner of this NFT");
             require(_deposits[msg.sender].contains(tokenId), "Token not deposited");
 
-            uint256 curblock = Math.min(block.number, expiration[tokenId]);
-            depositBlocks[msg.sender][tokenId] = curblock;
+            depositBlocks[msg.sender][tokenId] = block.number;
 
             reward = reward.add(rewards[i]);
         }
