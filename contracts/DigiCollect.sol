@@ -225,9 +225,9 @@ contract DigiCollect is NFT, ReentrancyGuard {
         started = !started;
     }
 
-    function setTokenAddress(address _tokenAddress) public onlyOwner {
+    function setERC20(address _ERC20) public onlyOwner {
         // Used to change rewards token if needed
-        ERC20_CONTRACT = _tokenAddress;
+        ERC20_CONTRACT = _ERC20;
     }
 
     function depositsOf(address account) external view returns (uint256[] memory) {

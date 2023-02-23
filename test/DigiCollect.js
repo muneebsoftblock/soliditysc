@@ -2,7 +2,6 @@ const DIGI = artifacts.require("DIGI");
 const DigiCollect = artifacts.require("DigiCollect");
 const fromWei = web3.utils.fromWei;
 const toWei = web3.utils.toWei;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const advanceBlock = () => {
   return new Promise((resolve, reject) => {
     web3.currentProvider.send(
@@ -26,20 +25,18 @@ const advanceBlock = () => {
 contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
   let digi;
   let digiCollect;
-  const totalSupply = toWei("1000000000"); //for testing only
 
   before(async () => {
     digi = await DIGI.new({ from: owner });
-    digiCollect = await DigiCollect.new(digi.address, { from: owner });
-    // await digi.grantRole(digiCollect.PAUSER_ROLE(), digiCollect.address, { from: owner });
-    // await digi.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", digiCollect.address, { from: owner });
+    digiCollect = await DigiCollect.new({ from: owner });
     const role = await digi.MINTER_ROLE();
-    console.log({ role });
-    await digi.grantRole(role, digiCollect.address);
+
+    await digi.grantRole(role, digiCollect.address, { from: owner });
+    await digiCollect.setERC20(digi.address, { from: owner });
   });
 
   it("Case 1: Buy 1 Nft, after 24 hours reward is 5 digi, collect 5 digi", async () => {
-    await digiCollect.setSaleActiveTime(0, { from: alice });
+    await digiCollect.setSaleActiveTime(0, { from: owner });
 
     const qty = 1;
     const from = alice;
@@ -58,13 +55,11 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
       assert.equal(reward, "0.00078125");
     }
 
-    await sleep(10000);
-
     await digiCollect.claimRewards([tokenId]);
 
     {
       const reward = fromWei("" + (await digi.balanceOf(alice)));
-      assert.equal(reward, "5");
+      assert.equal(reward, 2 * Number("0.00078125"));
     }
   });
 });
