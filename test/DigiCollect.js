@@ -55,7 +55,7 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5
       assert.equal(reward, "0.00078125");
     }
 
-    await digiCollect.claimRewards([tokenId]);
+    await digiCollect.claimRewards([tokenId], { from: alice });
 
     {
       const reward = fromWei("" + (await digi.balanceOf(alice)));
@@ -104,9 +104,20 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5
     // reward after transfer
     for (let i = 0; i < 2; i++) {
       await advanceBlock();
-      const reward = fromWei("" + (await digiCollect.calculateRewards(alice, [tokenId])));
+      const reward = fromWei("" + (await digiCollect.calculateRewards(bob, [tokenId])));
       console.log(`reward ${reward} DIGI`);
     }
+
+    await digiCollect.deposit([tokenId], { from: bob });
+
+    // reward after transfer
+    for (let i = 0; i < 2; i++) {
+      await advanceBlock();
+      const reward = fromWei("" + (await digiCollect.calculateRewards(bob, [tokenId])));
+      console.log(`reward ${reward} DIGI`);
+    }
+
+    await digiCollect.claimRewards([tokenId], { from: bob });
   });
 
   it("gift", async () => {
