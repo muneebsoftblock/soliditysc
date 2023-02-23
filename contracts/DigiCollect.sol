@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 //  TODO:
-// sol version 0.8.18
-// warnings, unused var
-// test withdraw, same contract
-//
 // dua, 80 20 in coding, can actually check from last year IA
 
 pragma solidity 0.8.14;
