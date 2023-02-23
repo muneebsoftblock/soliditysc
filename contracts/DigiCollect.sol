@@ -151,6 +151,12 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
         commission = _commission;
     }
 
+    uint256 blocksPerDay = 6400;
+
+    function set_blocksPerDay(uint256 _blocksPerDay) external onlyOwner {
+        blocksPerDay = _blocksPerDay;
+    }
+
     function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
         uint256 minted = totalSupply();
 
@@ -186,7 +192,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
     using SafeMath for uint256;
 
     address public ERC20_CONTRACT;
-    uint256 public EXPIRATION = 60 * 6400; // 6400 blocks per day
+    uint256 public EXPIRATION = 60 * blocksPerDay; // 60 days
 
     bool started = true;
     uint256[7] public rewardRate = [5, 6, 7, 10, 15, 50, 0];
@@ -243,7 +249,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
         // perDay / 6400 = reward per block
         // example just for understanding, values may differ
 
-        rate = (perDay * 1e18) / 6400;
+        rate = (perDay * 1e18) / blocksPerDay;
 
         return rate;
     }
@@ -304,6 +310,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
 
             expiration[tokenId] = unlockBlock;
             _deposits[msg.sender].add(tokenId);
+            depositBlocks[msg.sender][tokenId] = block.number;
         }
     }
 
