@@ -33,14 +33,13 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
 
     await digi.grantRole(role, digiCollect.address, { from: owner });
     await digiCollect.setERC20(digi.address, { from: owner });
+
+    await digiCollect.setSaleActiveTime(0, { from: owner });
   });
 
   it("Case 1: Buy 1 Nft, after 24 hours reward is 5 digi, collect 5 digi", async () => {
-    await digiCollect.setSaleActiveTime(0, { from: owner });
-
     const qty = 1;
     const from = alice;
-
     const price = await digiCollect.getPrice(qty);
     await digiCollect.buyDigiCollect(qty, ref1, {
       from,
