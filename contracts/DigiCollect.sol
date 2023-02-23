@@ -180,7 +180,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
     address public ERC20_CONTRACT;
     uint256 public EXPIRATION = 60 * blocksPerDay; // 60 days
 
-    bool started = true;
+    uint256 stakingStop = block.number + 2 * 365 * blocksPerDay; // 2 Years After
     uint256[7] public rewardRate = [5, 6, 7, 10, 15, 50, 0];
     mapping(uint256 => uint256) public expiration;
     mapping(uint256 => uint256) public tokenRarity;
@@ -207,8 +207,8 @@ contract DigiCollect is NFT, ReentrancyGuard {
         EXPIRATION = _expiration;
     }
 
-    function toggleStartStaking() public onlyOwner {
-        started = !started;
+    function set_stakingStop(uint256 _stakingStop) public onlyOwner {
+        stakingStop = _stakingStop;
     }
 
     function setERC20(address _ERC20) public onlyOwner {
@@ -282,7 +282,7 @@ contract DigiCollect is NFT, ReentrancyGuard {
     }
 
     function deposit(uint256[] memory tokenIds) public {
-        require(started, "Staking contract not started yet");
+        require(block.number < stakingStop, "Staking contract not started yet");
 
         uint256 unlockBlock = block.number + EXPIRATION;
 
@@ -339,7 +339,10 @@ contract DigiCollect is NFT, ReentrancyGuard {
         uint256 tokenId,
         uint256
     ) internal virtual override {
-        require(!_deposits[from].contains(tokenId), "Token is staked. You can not transfer.");
         require(expiration[tokenId] < block.number, "Try again later");
+
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = tokenId;
+        if (_deposits[from].contains(tokenId)) withdraw(tokenIds);
     }
 }

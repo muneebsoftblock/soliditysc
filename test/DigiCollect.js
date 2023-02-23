@@ -2,7 +2,6 @@ const DIGI = artifacts.require("DIGI");
 const DigiCollect = artifacts.require("DigiCollect");
 const fromWei = web3.utils.fromWei;
 const toWei = web3.utils.toWei;
-const truffleAssert = require("truffle-assertions");
 
 const advanceBlock = () => {
   return new Promise((resolve, reject) => {
@@ -24,7 +23,7 @@ const advanceBlock = () => {
   });
 };
 
-contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
+contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5, ref6]) => {
   let digi;
   let digiCollect;
 
@@ -63,10 +62,59 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2]) => {
       assert.equal(reward, 2 * Number("0.00078125"));
     }
 
-    // expect revert
     try {
       await digiCollect.transferFrom(alice, bob, tokenId, { from: alice });
       assert(false, "Should Revert");
     } catch (e) {}
   });
+
+  it("Case 2: After staking of 60 days reward continues to generate. The token should be unlocked and can be un staked or transferred now.", async () => {
+    const expirationBlocks = 2;
+    await digiCollect.setExpiration(expirationBlocks, { from: owner });
+
+    const qty = 1;
+    const from = alice;
+    const price = await digiCollect.getPrice(qty);
+    await digiCollect.buyDigiCollect(qty, ref2, {
+      from,
+      value: price,
+    });
+
+    const tokenId = 2;
+    try {
+      await digiCollect.transferFrom(alice, bob, tokenId, { from: alice });
+      assert(false, "It not reverted, it should be reverted");
+    } catch (e) {}
+
+    // reward before transfer
+    for (let i = 0; i < 2; i++) {
+      await advanceBlock();
+      const reward = fromWei("" + (await digiCollect.calculateRewards(alice, [tokenId])));
+      console.log(`reward ${reward} DIGI`);
+    }
+
+    for (let i = 0; i < expirationBlocks; i++) await advanceBlock();
+
+    try {
+      await digiCollect.transferFrom(alice, bob, tokenId, { from: alice });
+    } catch (e) {
+      assert(false, "It reverted, it should not be revert");
+    }
+
+    // reward after transfer
+    for (let i = 0; i < 2; i++) {
+      await advanceBlock();
+      const reward = fromWei("" + (await digiCollect.calculateRewards(alice, [tokenId])));
+      console.log(`reward ${reward} DIGI`);
+    }
+  });
+
+  it("gift", async () => {
+    await digiCollect.giftDigiCollect([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5], 1, {
+      from: owner,
+    });
+    await digiCollect.giftDigiCollect([ref6], 100, { from: owner });
+  });
 });
+
+//
