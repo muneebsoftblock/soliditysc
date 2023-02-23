@@ -72,7 +72,7 @@ contract NFT is ERC721A("Digi Collect Labs", "DCL"), ERC2981, Ownable, ERC721AQu
         digiCollectImages = _digiCollectImages;
     }
 
-    function setRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
+    function setRoyalty(address _receiver, uint96 _feeNumerator) external onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
