@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-// TODO: update to latest way
-// withdraw
 // getPrice warning
 
 //
 pragma solidity 0.8.14;
 
 import "erc721a/contracts/ERC721A.sol";
-import "erc721a/contracts/extensions/ERC721ABurnable.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -18,26 +15,18 @@ contract LaziName is
     ERC721A("Lazi Name Service", "LNS"),
     Ownable,
     ERC721AQueryable,
-    ERC721ABurnable,
     ERC2981
 {
     // Variables
-    uint256 public constant maxSupply = 10000;
-    uint256 public reservedLaziName = 500;
+    uint256 public maxSupply = 10000;
 
-    uint256 public freeLaziName = 0;
-    uint256 public freeMaxLaziNamePerWallet = 0;
-    uint256 public freeSaleActiveTime = type(uint256).max;
-
-    uint256 public firstFreeMints = 1;
-    uint256 public maxLaziNamePerWallet = 2;
     uint256 public laziNamePrice = 0.01 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
-    mapping(string => bool) public minted;
+    mapping(string => bool) public isMinted;
     mapping(uint256 => string) public domainNameOf;
 
-    string laziNameMetadataURI;
+    string laziNameImages;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -49,163 +38,122 @@ contract LaziName is
     }
 
     // Airdrop LaziName
-    function giftLaziName(address[] calldata _sendNftsTo, uint256 _laziNameQty)
+    function airdrop(address[] calldata _addresses, string[] memory _laziNames)
         external
         onlyOwner
-        laziNameAvailable(_sendNftsTo.length * _laziNameQty)
+        laziNameAvailable(_laziNames.length)
     {
-        reservedLaziName -= _sendNftsTo.length * _laziNameQty;
-        for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _laziNameQty);
+        for (uint256 i = 0; i < _laziNames.length; i++) {
+            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
+            domainNameOf[totalSupply() + i] = _laziNames[i];
+            _safeMint(_addresses[i], 1);
+        }
     }
 
-    // buy / mint LaziName Nfts here
-    function buyLaziName(string memory _laziName)
+    function airdrop(address _address, string[] memory _laziNames)
+        external
+        onlyOwner
+        laziNameAvailable(_laziNames.length)
+    {
+        for (uint256 i = 0; i < _laziNames.length; i++) {
+            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
+            domainNameOf[totalSupply() + i] = _laziNames[i];
+        }
+
+        _safeMint(_address, _laziNames.length);
+    }
+
+    // buy LaziName Nfts
+    function buyLaziNames(string[] memory _laziNames)
         external
         payable
         saleActive(saleActiveTime)
-        callerIsUser
-        mintLimit(1, maxLaziNamePerWallet)
-        priceAvailableFirstNftFree(1)
-        laziNameAvailable(1)
+        pricePaid(_laziNames.length)
+        laziNameAvailable(_laziNames.length)
     {
-        require(_totalMinted() >= freeLaziName, "Get your LaziName for free");
-        require(!minted[_laziName], "Nft Domain Already Minted");
+        for (uint256 i = 0; i < _laziNames.length; i++) {
+            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
+            domainNameOf[totalSupply() + i] = _laziNames[i];
+        }
 
-        domainNameOf[totalSupply()] = _laziName;
-        _mint(msg.sender, 1);
+        _safeMint(msg.sender, _laziNames.length);
     }
 
-    function buyLaziNameFree(uint256 _laziNameQty)
-        external
-        saleActive(freeSaleActiveTime)
-        callerIsUser
-        mintLimit(_laziNameQty, freeMaxLaziNamePerWallet)
-        laziNameAvailable(_laziNameQty)
-    {
-        require(
-            _totalMinted() < freeLaziName,
-            "LaziName max free limit reached"
-        );
-
-        _mint(msg.sender, _laziNameQty);
-    }
-
-    // withdraw eth
+    // onlyOwner functions
     function withdraw() external onlyOwner {
-        payable(msg.sender).transfer(address(this).balance);
+        (bool success, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
+        require(success);
     }
 
-    // setters
-    function setLaziNamePrice(uint256 _newPrice) external onlyOwner {
-        laziNamePrice = _newPrice;
+    function set_maxSupply(uint256 _maxSupply) external onlyOwner {
+        maxSupply = _maxSupply;
     }
 
-    function setFreeLaziName(uint256 _freeLaziName) external onlyOwner {
-        freeLaziName = _freeLaziName;
+    function set_laziNamePrice(uint256 _laziNamePrice) external onlyOwner {
+        laziNamePrice = _laziNamePrice;
     }
 
-    function setFirstFreeMints(uint256 _firstFreeMints) external onlyOwner {
-        firstFreeMints = _firstFreeMints;
-    }
-
-    function setReservedLaziName(uint256 _reservedLaziName) external onlyOwner {
-        reservedLaziName = _reservedLaziName;
-    }
-
-    function setMaxLaziNamePerWallet(
-        uint256 _maxLaziNamePerWallet,
-        uint256 _freeMaxLaziNamePerWallet
-    ) external onlyOwner {
-        maxLaziNamePerWallet = _maxLaziNamePerWallet;
-        freeMaxLaziNamePerWallet = _freeMaxLaziNamePerWallet;
-    }
-
-    function setSaleActiveTime(
-        uint256 _saleActiveTime,
-        uint256 _freeSaleActiveTime
-    ) external onlyOwner {
+    function set_saleActiveTime(uint256 _saleActiveTime) external onlyOwner {
         saleActiveTime = _saleActiveTime;
-        freeSaleActiveTime = _freeSaleActiveTime;
     }
 
-    function setLaziNameMetadataURI(string memory _laziNameMetadataURI)
+    function set_laziNameImages(string memory _laziNameImages)
         external
         onlyOwner
     {
-        laziNameMetadataURI = _laziNameMetadataURI;
+        laziNameImages = _laziNameImages;
     }
 
-    function setRoyalty(address _receiver, uint96 _feeNumerator)
+    function set_royalty(address _receiver, uint96 _feeNumerator)
         public
         onlyOwner
     {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
-    // System Related
-    function _baseURI() internal view override returns (string memory) {
-        return laziNameMetadataURI;
-    }
-
-    function _startTokenId() internal pure override returns (uint256) {
-        return 1;
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721A, IERC165, ERC2981)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-
     // Helper Modifiers
-    modifier callerIsUser() {
-        require(tx.origin == msg.sender, "The caller is a sm");
-        _;
-    }
-
     modifier saleActive(uint256 _saleActiveTime) {
         require(block.timestamp > _saleActiveTime, "Nope, sale is not open");
         _;
     }
 
-    modifier mintLimit(uint256 _laziNameQty, uint256 _maxLaziNamePerWallet) {
-        require(
-            _numberMinted(msg.sender) + _laziNameQty <= _maxLaziNamePerWallet,
-            "LaziName max x wallet exceeded"
-        );
-        _;
-    }
-
     modifier laziNameAvailable(uint256 _laziNameQty) {
         require(
-            _laziNameQty + totalSupply() + reservedLaziName <= maxSupply,
+            _laziNameQty + totalSupply() <= maxSupply,
             "Currently are sold out"
         );
         _;
     }
 
-    modifier priceAvailable(uint256 _laziNameQty) {
-        require(
-            msg.value == _laziNameQty * laziNamePrice,
-            "Hey hey, send the right amount of ETH"
-        );
-        _;
+    // Price Module
+    uint256 public nftSoldPacketSize = 200;
+
+    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
+        external
+        onlyOwner
+    {
+        nftSoldPacketSize = _nftSoldPacketSize;
     }
 
-    function getPrice(uint256 _qty) public view returns (uint256 price) {
-        uint256 minted = _numberMinted(msg.sender) + _qty;
-        if (minted > firstFreeMints)
-            price = (minted - firstFreeMints) * laziNamePrice;
+    uint256 public priceIncrease = 0.005 ether;
+
+    function set_priceIncrease(uint256 _priceIncrease) external onlyOwner {
+        priceIncrease = _priceIncrease;
     }
 
-    modifier priceAvailableFirstNftFree(uint256 _laziNameQty) {
+    function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
+        uint256 minted = totalSupply();
+        uint256 packetsMinted = minted / nftSoldPacketSize; // getting benefit from dangerous calculation
+        uint256 basePrice = laziNamePrice * _qty;
+        uint256 priceIncreaseForAll = packetsMinted * priceIncrease * _qty;
+        priceNow = basePrice + priceIncreaseForAll;
+    }
+
+    modifier pricePaid(uint256 _qty) {
         require(
-            msg.value == getPrice(_laziNameQty),
+            msg.value == getPrice(_qty),
             "Hey hey, send the right amount of ETH"
         );
         _;
@@ -226,5 +174,24 @@ contract LaziName is
     {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
+    }
+
+    // System Related
+    function _baseURI() internal view override returns (string memory) {
+        return laziNameImages;
+    }
+
+    function _startTokenId() internal pure override returns (uint256) {
+        return 1;
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721A, IERC165, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
