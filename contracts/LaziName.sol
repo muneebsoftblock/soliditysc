@@ -20,7 +20,7 @@ contract LaziName is
     // Variables
     uint256 public maxSupply = 10000;
 
-    uint256 public laziNamePrice = 0.01 ether;
+    uint256 public laziNamePrice = 0.0001 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
     mapping(string => bool) public isMinted;
