@@ -5,6 +5,11 @@
 //
 pragma solidity 0.8.14;
 
+// For Remix
+// import "erc721a@3.3.0/contracts/ERC721A.sol";
+// import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
+
+// For Truffle
 import "erc721a/contracts/ERC721A.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
