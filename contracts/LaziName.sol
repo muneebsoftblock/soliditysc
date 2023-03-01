@@ -42,43 +42,47 @@ contract LaziName is
         autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
     }
 
+    function registerName(string calldata _laziName, uint256 tokenId) internal {
+        require(!isMinted[_laziName], "Nft Domain Already Minted");
+        domainNameOf[tokenId] = _laziName;
+    }
+
     // Airdrop LaziName
-    function airdrop(address[] calldata _addresses, string[] memory _laziNames)
-        external
-        onlyOwner
-        laziNameAvailable(_laziNames.length)
-    {
+    function airdrop(
+        address[] calldata _addresses,
+        string[] calldata _laziNames
+    ) external onlyOwner laziNameAvailable(_laziNames.length) {
+        uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
-            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
-            domainNameOf[totalSupply() + i] = _laziNames[i];
+            registerName(_laziNames[i], startId + i);
             _safeMint(_addresses[i], 1);
         }
     }
 
-    function airdrop(address _address, string[] memory _laziNames)
+    function airdrop(address _address, string[] calldata _laziNames)
         external
         onlyOwner
         laziNameAvailable(_laziNames.length)
     {
+        uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
-            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
-            domainNameOf[totalSupply() + i] = _laziNames[i];
+            registerName(_laziNames[i], startId + i);
         }
 
         _safeMint(_address, _laziNames.length);
     }
 
     // buy LaziName Nfts
-    function buyLaziNames(string[] memory _laziNames)
+    function buyLaziNames(string[] calldata _laziNames)
         external
         payable
         saleActive(saleActiveTime)
         pricePaid(_laziNames.length)
         laziNameAvailable(_laziNames.length)
     {
+        uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
-            require(!isMinted[_laziNames[i]], "Nft Domain Already Minted");
-            domainNameOf[totalSupply() + i] = _laziNames[i];
+            registerName(_laziNames[i], startId + i);
         }
 
         _safeMint(msg.sender, _laziNames.length);
@@ -104,7 +108,7 @@ contract LaziName is
         saleActiveTime = _saleActiveTime;
     }
 
-    function set_laziNameImages(string memory _laziNameImages)
+    function set_laziNameImages(string calldata _laziNameImages)
         external
         onlyOwner
     {
@@ -112,7 +116,7 @@ contract LaziName is
     }
 
     function set_royalty(address _receiver, uint96 _feeNumerator)
-        public
+        external
         onlyOwner
     {
         _setDefaultRoyalty(_receiver, _feeNumerator);
