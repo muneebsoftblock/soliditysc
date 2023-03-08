@@ -63,6 +63,7 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5
     }
 
     try {
+      // await digiCollect.withdraw([tokenId]);
       await digiCollect.transferFrom(alice, bob, tokenId, { from: alice });
       assert(false, "Should Revert");
     } catch (e) {}
