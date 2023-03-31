@@ -12,12 +12,7 @@ interface OpenSea {
     function proxies(address) external view returns (address);
 }
 
-contract CyberSyndicate is
-    ERC4907A("CyberSyndicate", "CSE"),
-    Ownable,
-    ERC2981,
-    DefaultOperatorFilterer
-{
+contract CyberSyndicate is ERC4907A("CyberSyndicate", "CSE"), Ownable, ERC2981, DefaultOperatorFilterer {
     string public imagesLink;
     bool public revealed = false;
     uint256 public maxSupply = 5000;
@@ -119,8 +114,14 @@ contract CyberSyndicate is
         notRevealedImagesLink = _notRevealedImagesLink;
     }
 
-    function setSaleActiveTime(uint256 _buyActiveTime) public onlyOwner {
+    function set_buyActiveTime(uint256 _buyActiveTime) public onlyOwner {
         buyActiveTime = _buyActiveTime;
+    }
+
+    address public signer = msg.sender;
+
+    function set_signer(uint256 _signer) public onlyOwner {
+        signer = _signer;
     }
 }
 
@@ -133,7 +134,6 @@ contract Nft is CyberSyndicate {
 
     function purchaseNft(
         uint256 _howMany,
-        address _owner,
         bytes32 _signedMessageHash,
         uint256 _rootNumber,
         bytes memory _signature
@@ -148,7 +148,7 @@ contract Nft is CyberSyndicate {
 
         require(_signature.length == 65, "Invalid signature length");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredSigner == _owner, "Invalid signature");
+        require(recoveredSigner == signer, "Invalid signature");
         _signatureUsed[_signature] = true;
         _safeMint(msg.sender, _howMany);
     }
