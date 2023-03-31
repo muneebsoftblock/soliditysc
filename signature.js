@@ -13,8 +13,7 @@ const signature = web3.eth.accounts.sign(message, privateKey);
 
 console.log(signature);
 
-purchaseNft(_howMany, _owner, _signedMessageHash, _rootNumber, _signature); 
-    
+// purchaseNft(_howMany = 1, signature.messageHash, _rootNumber = 0, signature.signature);
 // { signature object output will be like that
 //     message: 'mytoken!',
 //     messageHash: '0x9787e39d14dbb28c303a3b270ea35c2c6ade4d8af8ec85ab2d8e548beae58cb9',
