@@ -6,7 +6,6 @@ pragma solidity ^0.8.17;
 // import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "erc721a/contracts/ERC721A.sol";
 
-
 import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -34,32 +33,23 @@ contract Sample is
     string constant baseExtension = ".json";
     uint256 public publicmintActiveTime = 0;
 
-    constructor()  {
+    constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
     }
 
     // public
     function purchaseTokens(uint256 _mintAmount) public payable {
-        require(
-            block.timestamp > publicmintActiveTime,
-            "the contract is paused"
-        );
+        require(block.timestamp > publicmintActiveTime, "the contract is paused");
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
-        require(
-            _numberMinted(msg.sender) + _mintAmount <= maxMintAmount,
-            "max mint amount per session exceeded"
-        );
-        require(
-            supply + _mintAmount + nftsForOwner <= maxSupply,
-            "max NFT limit exceeded"
-        );
+        require(_numberMinted(msg.sender) + _mintAmount <= maxMintAmount, "max mint amount per session exceeded");
+        require(supply + _mintAmount + nftsForOwner <= maxSupply, "max NFT limit exceeded");
         require(msg.value == costPerNft * _mintAmount, "insufficient funds");
 
         _safeMint(msg.sender, _mintAmount);
     }
 
-    function numberMinted(address _address) public view returns (uint256){
+    function numberMinted(address _address) public view returns (uint256) {
         return _numberMinted(_address);
     }
 
@@ -67,13 +57,7 @@ contract Sample is
     //       OVERRIDE CODE STARTS    //
     ///////////////////////////////////
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC4907A, ERC2981)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC4907A, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -85,30 +69,15 @@ contract Sample is
         return metadataFolderIpfsLink;
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721A)
-        returns (string memory)
-    {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
+    function tokenURI(uint256 tokenId) public view virtual override(ERC721A) returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
         if (revealed == false) return notRevealedMetadataFolderIpfsLink;
 
         string memory currentBaseURI = _baseURI();
         return
             bytes(currentBaseURI).length > 0
-                ? string(
-                    abi.encodePacked(
-                        currentBaseURI,
-                        _toString(tokenId),
-                        baseExtension
-                    )
-                )
+                ? string(abi.encodePacked(currentBaseURI, _toString(tokenId), baseExtension))
                 : "";
     }
 
@@ -117,30 +86,21 @@ contract Sample is
     //////////////////
 
     function withdraw() public payable onlyOwner {
-        (bool success, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success);
     }
 
-    function giftNft(address[] calldata _sendNftsTo, uint256 _howMany)
-        external
-        onlyOwner
-    {
+    function giftNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
         nftsForOwner -= _sendNftsTo.length * _howMany;
 
-        for (uint256 i = 0; i < _sendNftsTo.length; i++)
-            _safeMint(_sendNftsTo[i], _howMany);
+        for (uint256 i = 0; i < _sendNftsTo.length; i++) _safeMint(_sendNftsTo[i], _howMany);
     }
 
     function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
         nftsForOwner = _newnftsForOwner;
     }
 
-    function setDefaultRoyalty(address _receiver, uint96 _feeNumerator)
-        public
-        onlyOwner
-    {
+    function setDefaultRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
@@ -156,16 +116,11 @@ contract Sample is
         maxMintAmount = _newmaxMintAmount;
     }
 
-    function setMetadataFolderIpfsLink(string memory _newMetadataFolderIpfsLink)
-        public
-        onlyOwner
-    {
+    function setMetadataFolderIpfsLink(string memory _newMetadataFolderIpfsLink) public onlyOwner {
         metadataFolderIpfsLink = _newMetadataFolderIpfsLink;
     }
 
-    function setNotRevealedMetadataFolderIpfsLink(
-        string memory _notRevealedMetadataFolderIpfsLink
-    ) public onlyOwner {
+    function setNotRevealedMetadataFolderIpfsLink(string memory _notRevealedMetadataFolderIpfsLink) public onlyOwner {
         notRevealedMetadataFolderIpfsLink = _notRevealedMetadataFolderIpfsLink;
     }
 
@@ -188,50 +143,32 @@ contract Nft is Sample {
         bytes memory _signature
     ) external payable {
         require(block.timestamp > presaleActiveTime, "Presale is not active");
-        require(
-            _howMany > 0 && _howMany <= 10,
-            "Invalid quantity of tokens to purchase"
-        );
+        require(_howMany > 0 && _howMany <= 10, "Invalid quantity of tokens to purchase");
 
-        require(
-            _signatureUsed[_signature] == false,
-            "Signaute is Already Used"
-        );
+        require(_signatureUsed[_signature] == false, "Signaute is Already Used");
 
-        require(
-            _signature.length == 65,
-            "Invalid signature length"
-        );
+        require(_signature.length == 65, "Invalid signature length");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredSigner == _owner, "Invalid signature");
         _signatureUsed[_signature] = true;
         _safeMint(msg.sender, _howMany);
-
     }
 
     // function to return the messageHash
     function messageHash(string memory _message) public pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
     }
-    function getEthSignedMessageHash(
-        bytes32 _messageHash
-    ) public pure returns (bytes32) {
+
+    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
         /*
         Signature is produced by signing a keccak256 hash with the following format:
         "\x19Ethereum Signed Message\n" + len(msg) + msg
         */
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
-            );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
     // verifySignature helper function
-    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature)
-        public
-        pure
-        returns (address)
-    {
+    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature) public pure returns (address) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -260,19 +197,12 @@ contract Nft is Sample {
         return signer;
     }
 
-    function setPresale(
-        uint256 _rootNumber,
-        uint256 _maxMintPresales,
-        uint256 _itemPricePresale
-    ) external onlyOwner {
+    function setPresale(uint256 _rootNumber, uint256 _maxMintPresales, uint256 _itemPricePresale) external onlyOwner {
         maxMintPresales[_rootNumber] = _maxMintPresales;
         itemPricePresales[_rootNumber] = _itemPricePresale;
     }
 
-    function setPresaleActiveTime(uint256 _presaleActiveTime)
-        external
-        onlyOwner
-    {
+    function setPresaleActiveTime(uint256 _presaleActiveTime) external onlyOwner {
         presaleActiveTime = _presaleActiveTime;
     }
 
@@ -280,22 +210,17 @@ contract Nft is Sample {
     // https://opensea.io/blog/announcements/on-creator-fees
     // https://github.com/ProjectOpenSea/operator-filter-registry#usage
 
-    function setApprovalForAll(address operator, bool approved)
-        public
-        virtual
-        override
-        onlyAllowedOperatorApproval(operator)
-    {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
 
-    function approve(address operator, uint256 tokenId)
-        public
-        payable
-        virtual
-        override
-        onlyAllowedOperatorApproval(operator)
-    {
+    function approve(
+        address operator,
+        uint256 tokenId
+    ) public payable virtual override onlyAllowedOperatorApproval(operator) {
         super.approve(operator, tokenId);
     }
 
