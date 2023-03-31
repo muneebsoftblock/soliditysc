@@ -23,28 +23,27 @@ contract Sample is
     DefaultOperatorFilterer
 {
     bool public revealed = false;
-    string public notRevealedMetadataFolderIpfsLink;
+    string public notRevealedImagesLink;
     uint256 public maxMintAmount = 10;
     uint256 public maxSupply = 5000;
-    uint256 public costPerNft = 0.015 * 1e18;
-    uint256 public nftsForOwner = 50;
-    string public metadataFolderIpfsLink;
-    uint256 constant presaleSupply = 300;
+    uint256 public nftPrice = 0.015 * 1e18;
+    uint256 public reservedNfts = 50;
+    string public imagesLink;
     string constant baseExtension = ".json";
-    uint256 public publicmintActiveTime = 0;
+    uint256 public buyActiveTime = 0;
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
     }
 
     // public
-    function purchaseTokens(uint256 _mintAmount) public payable {
-        require(block.timestamp > publicmintActiveTime, "the contract is paused");
+    function buyNft(uint256 _mintAmount) public payable {
+        require(block.timestamp > buyActiveTime, "the contract is paused");
         uint256 supply = totalSupply();
         require(_mintAmount > 0, "need to mint at least 1 NFT");
         require(_numberMinted(msg.sender) + _mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-        require(supply + _mintAmount + nftsForOwner <= maxSupply, "max NFT limit exceeded");
-        require(msg.value == costPerNft * _mintAmount, "insufficient funds");
+        require(supply + _mintAmount + reservedNfts <= maxSupply, "max NFT limit exceeded");
+        require(msg.value == nftPrice * _mintAmount, "insufficient funds");
 
         _safeMint(msg.sender, _mintAmount);
     }
@@ -66,13 +65,13 @@ contract Sample is
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
-        return metadataFolderIpfsLink;
+        return imagesLink;
     }
 
     function tokenURI(uint256 tokenId) public view virtual override(ERC721A) returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-        if (revealed == false) return notRevealedMetadataFolderIpfsLink;
+        if (revealed == false) return notRevealedImagesLink;
 
         string memory currentBaseURI = _baseURI();
         return
@@ -90,14 +89,14 @@ contract Sample is
         require(success);
     }
 
-    function giftNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
-        nftsForOwner -= _sendNftsTo.length * _howMany;
+    function airdropNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
+        reservedNfts -= _sendNftsTo.length * _howMany;
 
         for (uint256 i = 0; i < _sendNftsTo.length; i++) _safeMint(_sendNftsTo[i], _howMany);
     }
 
-    function setnftsForOwner(uint256 _newnftsForOwner) public onlyOwner {
-        nftsForOwner = _newnftsForOwner;
+    function set_reservedNfts(uint256 _reservedNfts) public onlyOwner {
+        reservedNfts = _reservedNfts;
     }
 
     function setDefaultRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
@@ -108,24 +107,24 @@ contract Sample is
         revealed = !revealed;
     }
 
-    function setCostPerNft(uint256 _newCostPerNft) public onlyOwner {
-        costPerNft = _newCostPerNft;
+    function set_nftPrice(uint256 _nftPrice) public onlyOwner {
+        nftPrice = _nftPrice;
     }
 
-    function setMaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
-        maxMintAmount = _newmaxMintAmount;
+    function setMaxMintAmount(uint256 _maxMintAmount) public onlyOwner {
+        maxMintAmount = _maxMintAmount;
     }
 
-    function setMetadataFolderIpfsLink(string memory _newMetadataFolderIpfsLink) public onlyOwner {
-        metadataFolderIpfsLink = _newMetadataFolderIpfsLink;
+    function set_imagesLink(string memory _imagesLink) public onlyOwner {
+        imagesLink = _imagesLink;
     }
 
-    function setNotRevealedMetadataFolderIpfsLink(string memory _notRevealedMetadataFolderIpfsLink) public onlyOwner {
-        notRevealedMetadataFolderIpfsLink = _notRevealedMetadataFolderIpfsLink;
+    function set_notRevealedImagesLink(string memory _notRevealedImagesLink) public onlyOwner {
+        notRevealedImagesLink = _notRevealedImagesLink;
     }
 
-    function setSaleActiveTime(uint256 _publicmintActiveTime) public onlyOwner {
-        publicmintActiveTime = _publicmintActiveTime;
+    function setSaleActiveTime(uint256 _buyActiveTime) public onlyOwner {
+        buyActiveTime = _buyActiveTime;
     }
 }
 
