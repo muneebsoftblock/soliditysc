@@ -15,22 +15,21 @@ interface OpenSea {
     function proxies(address) external view returns (address);
 }
 
-contract Sample is
-    ERC4907A("Sample", "NTO"),
-    // ERC721A("Sample", "NTO"),
+contract CyberSyndicate is
+    ERC4907A("CyberSyndicate", "NTO"),
     Ownable,
     ERC2981,
     DefaultOperatorFilterer
 {
-    bool public revealed = false;
-    string public notRevealedImagesLink;
-    uint256 public maxMintAmount = 10;
-    uint256 public maxSupply = 5000;
-    uint256 public nftPrice = 0.015 * 1e18;
-    uint256 public reservedNfts = 50;
     string public imagesLink;
-    string constant baseExtension = ".json";
+    bool public revealed = false;
+    uint256 public maxSupply = 5000;
+    uint256 public reservedNfts = 50;
     uint256 public buyActiveTime = 0;
+    uint256 public maxMintAmount = 10;
+    string public notRevealedImagesLink;
+    uint256 public nftPrice = 0.015 * 1e18;
+    string constant baseExtension = ".json";
 
     constructor() {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
@@ -128,7 +127,7 @@ contract Sample is
     }
 }
 
-contract Nft is Sample {
+contract Nft is CyberSyndicate {
     // multiple presale configs
     mapping(bytes => bool) public _signatureUsed;
     mapping(uint256 => uint256) public maxMintPresales;
@@ -144,7 +143,7 @@ contract Nft is Sample {
         require(block.timestamp > presaleActiveTime, "Presale is not active");
         require(_howMany > 0 && _howMany <= 10, "Invalid quantity of tokens to purchase");
 
-        require(_signatureUsed[_signature] == false, "Signaute is Already Used");
+        require(_signatureUsed[_signature] == false, "Signature is already used");
 
         require(_signature.length == 65, "Invalid signature length");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
@@ -249,4 +248,4 @@ contract Nft is Sample {
     }
 }
 
-contract SampleContract is Nft {}
+contract CyberSyndicateContract is Nft {}
