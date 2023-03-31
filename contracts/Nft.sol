@@ -13,7 +13,7 @@ interface OpenSea {
 }
 
 contract CyberSyndicate is
-    ERC4907A("CyberSyndicate", "NTO"),
+    ERC4907A("CyberSyndicate", "CSE"),
     Ownable,
     ERC2981,
     DefaultOperatorFilterer
