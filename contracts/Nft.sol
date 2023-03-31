@@ -138,12 +138,16 @@ contract Nft is CyberSyndicate {
         uint256 _howMany,
         address _owner,
         bytes32 _signedMessageHash,
+        uint256 _rootNumber,
         bytes memory _signature
     ) external payable {
         require(block.timestamp > presaleActiveTime, "Presale is not active");
         require(_howMany > 0 && _howMany <= 10, "Invalid quantity of tokens to purchase");
 
         require(_signatureUsed[_signature] == false, "Signature is already used");
+
+        require(msg.value == _howMany * itemPricePresales[_rootNumber], "Try to send more ETH");
+        require(_numberMinted(msg.sender) + _howMany <= maxMintPresales[_rootNumber], "Purchase exceeds max allowed");
 
         require(_signature.length == 65, "Invalid signature length");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
