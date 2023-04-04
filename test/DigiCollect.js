@@ -127,6 +127,25 @@ contract("DigiCollect", ([alice, bob, carol, owner, ref1, ref2, ref3, ref4, ref5
     });
     await digiCollect.giftDigiCollect([ref6], 100, { from: owner });
   });
+
+  it("test buy tokens", async () => {
+    await digi.buyTokens({ from: carol, value: toWei("0.01", "ether") });
+    const bal = "" + (await digi.balanceOf(carol));
+    console.log("Balance " + fromWei(bal));
+
+    {
+      const bal = "" + (await web3.eth.getBalance(owner));
+      console.log("Owner ETH Balance " + fromWei(bal));
+    }
+
+    // await digi.withdraw({ from: carol });
+    await digi.withdraw({ from: owner });
+
+    {
+      const bal = "" + (await web3.eth.getBalance(owner));
+      console.log("Owner ETH Balance " + fromWei(bal));
+    }
+  });
 });
 
 //

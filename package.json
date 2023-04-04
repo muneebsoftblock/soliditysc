@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "run-blockchain": "npx ganache-cli",
-    "compile": "truffle compile",
-    "test": "truffle test"
+    "run-blockchain": "ganache-cli",
+    "compile": "npx truffle compile",
+    "test": "npx truffle test"
   },
   "keywords": [],
   "author": "",

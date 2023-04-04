@@ -9,12 +9,13 @@ contract DIGI is ERC20, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    uint256 public price = 0.00001 ether;
+    uint256 public maxSupply = 50_000_000_000 * 1e18;
+
     constructor() ERC20("Digi Collect", "DIGI") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
-        
-        mint(msg.sender, 50_000_000_000 * 1e18); // 50 Billion Supply
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -31,5 +32,23 @@ contract DIGI is ERC20, Pausable, AccessControl {
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
         super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function buyTokens() public payable {
+        uint256 tokensToBuy = msg.value * 1e18 / price;
+
+        uint256 tokensAvailable = maxSupply - totalSupply();
+        require(tokensAvailable >= tokensToBuy, "Insufficient token balance");
+
+        _mint(msg.sender, tokensToBuy);
+    }
+
+    function withdraw() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        require(success, "Failed to withdraw ETH");
+    }
+
+    function setPrice(uint256 _price) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        price = _price;
     }
 }
