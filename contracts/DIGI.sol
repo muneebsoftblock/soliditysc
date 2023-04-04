@@ -10,6 +10,8 @@ contract DIGI is ERC20, Pausable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor() ERC20("Digi Collect", "DIGI") {
+        mint(msg.sender, 50_000_000_000 * 1e18); // 50 Billion Supply
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -27,11 +29,7 @@ contract DIGI is ERC20, Pausable, AccessControl {
         _mint(to, amount);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override whenNotPaused {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
         super._beforeTokenTransfer(from, to, amount);
     }
 }
