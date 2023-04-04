@@ -59,11 +59,10 @@ contract LaziName is
         }
     }
 
-    function airdrop(address _address, string[] calldata _laziNames)
-        external
-        onlyOwner
-        laziNameAvailable(_laziNames.length)
-    {
+    function airdrop(
+        address _address,
+        string[] calldata _laziNames
+    ) external onlyOwner laziNameAvailable(_laziNames.length) {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -73,7 +72,9 @@ contract LaziName is
     }
 
     // buy LaziName Nfts
-    function buyLaziNames(string[] calldata _laziNames)
+    function buyLaziNames(
+        string[] calldata _laziNames
+    )
         external
         payable
         saleActive(saleActiveTime)
@@ -108,17 +109,16 @@ contract LaziName is
         saleActiveTime = _saleActiveTime;
     }
 
-    function set_laziNameImages(string calldata _laziNameImages)
-        external
-        onlyOwner
-    {
+    function set_laziNameImages(
+        string calldata _laziNameImages
+    ) external onlyOwner {
         laziNameImages = _laziNameImages;
     }
 
-    function set_royalty(address _receiver, uint96 _feeNumerator)
-        external
-        onlyOwner
-    {
+    function set_royalty(
+        address _receiver,
+        uint96 _feeNumerator
+    ) external onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
@@ -139,10 +139,9 @@ contract LaziName is
     // Price Module
     uint256 public nftSoldPacketSize = 200;
 
-    function set_nftSoldPacketSize(uint256 _nftSoldPacketSize)
-        external
-        onlyOwner
-    {
+    function set_nftSoldPacketSize(
+        uint256 _nftSoldPacketSize
+    ) external onlyOwner {
         nftSoldPacketSize = _nftSoldPacketSize;
     }
 
@@ -175,12 +174,10 @@ contract LaziName is
         allowed[_spender] = !allowed[_spender];
     }
 
-    function isApprovedForAll(address _owner, address _operator)
-        public
-        view
-        override(ERC721A, IERC721)
-        returns (bool)
-    {
+    function isApprovedForAll(
+        address _owner,
+        address _operator
+    ) public view override(ERC721A, IERC721) returns (bool) {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
@@ -194,13 +191,9 @@ contract LaziName is
         return 1;
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721A, IERC165, ERC2981)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
