@@ -23,7 +23,7 @@ contract Nft is
     ERC2981
 {
     // Variables
-    uint256 public laziNamePrice = 0.0001 ether;
+    uint256 public laziNamePrice = 0.016 * 1e18; // $5 / 0.016 BNB
     uint256 public saleActiveTime = type(uint256).max;
 
     mapping(string => bool) public isMinted;
