@@ -40,6 +40,7 @@ contract Nft is
 
     function registerName(string calldata _laziName, uint256 tokenId) internal {
         require(!isMinted[_laziName], "Nft Domain Already Minted");
+        isMinted[_laziName] = true;
         domainNameOf[tokenId] = _laziName;
     }
 
