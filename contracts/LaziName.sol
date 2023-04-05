@@ -62,7 +62,6 @@ contract Nft is
         _safeMint(_address, _laziNames.length);
     }
 
-    // buy LaziName Nfts
     function buyLaziNames(
         string[] calldata _laziNames
     ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
