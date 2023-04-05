@@ -16,32 +16,43 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract Nft is
+contract LaziName is
     ERC721A("Lazi Name Service", "LNS"),
     Ownable,
     ERC721AQueryable,
     ERC2981
 {
-    // Variables
-    uint256 public laziNamePrice = 0.016 * 1e18; // $5 / 0.016 BNB
-    uint256 public saleActiveTime = type(uint256).max;
-
     mapping(string => bool) public isMinted;
     mapping(uint256 => string) public domainNameOf;
     mapping(bytes => bool) public _signatureUsed;
 
-    string laziNameImages;
+    uint256 public laziNamePrice = 0.016 * 1e18; // $5 / 0.016 BNB
+    uint256 public saleActiveTime = type(uint256).max;
 
     address public mintSigner = msg.sender;
 
-    function set_mintSigner(address _mintSigner) public onlyOwner {
-        mintSigner = _mintSigner;
+    string laziNameImages;
+
+    // LaziName Auto Approves Marketplaces
+    mapping(address => bool) private allowed;
+
+    // these lines are called only once when the contract is deployed
+    constructor() {
+        autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
+        autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
+        autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
+        autoApproveMarketplace(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
+        autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
     }
 
     function registerName(string calldata _laziName, uint256 tokenId) internal {
         require(!isMinted[_laziName], "Nft Domain Already Minted");
         isMinted[_laziName] = true;
         domainNameOf[tokenId] = _laziName;
+    }
+
+    function set_mintSigner(address _mintSigner) public onlyOwner {
+        mintSigner = _mintSigner;
     }
 
     // Airdrop LaziName
@@ -225,20 +236,6 @@ contract Nft is
     ) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
-}
-
-contract AutoApproveMarketplaces is Nft {
-    // LaziName Auto Approves Marketplaces
-    mapping(address => bool) private allowed;
-
-    // these lines are called only once when the contract is deployed
-    constructor() {
-        autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
-        autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
-        autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
-        autoApproveMarketplace(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // Coinbase
-        autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
-    }
 
     function autoApproveMarketplace(address _spender) public onlyOwner {
         allowed[_spender] = !allowed[_spender];
@@ -252,5 +249,3 @@ contract AutoApproveMarketplaces is Nft {
         return super.isApprovedForAll(_owner, _operator);
     }
 }
-
-contract LaziName is AutoApproveMarketplaces {}
