@@ -66,6 +66,18 @@ contract Nft is
 
     function buyLaziNames(
         string[] calldata _laziNames
+    ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+        uint256 startId = totalSupply() + _startTokenId();
+        for (uint256 i = 0; i < _laziNames.length; i++) {
+            registerName(_laziNames[i], startId + i);
+        }
+
+        _safeMint(msg.sender, _laziNames.length);
+    }
+
+
+    function buyLaziNamesWhitelist(
+        string[] calldata _laziNames
         address _owner,
         bytes32 _signedMessageHash,
         bytes memory _signature
