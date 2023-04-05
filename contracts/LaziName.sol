@@ -32,10 +32,10 @@ contract Nft is
 
     string laziNameImages;
 
-    address public signer = msg.sender;
+    address public mintSigner = msg.sender;
 
-    function set_signer(address _signer) public onlyOwner {
-        signer = _signer;
+    function set_mintSigner(address _mintSigner) public onlyOwner {
+        mintSigner = _mintSigner;
     }
 
     function registerName(string calldata _laziName, uint256 tokenId) internal {
@@ -91,11 +91,11 @@ contract Nft is
         );
 
         require(_signature.length == 65, "Invalid signature length");
-        address recoveredSigner = verifySignature(
+        address recoveredMintSigner = verifySignature(
             _signedMessageHash,
             _signature
         );
-        require(recoveredSigner == signer, "Invalid signature");
+        require(recoveredMintSigner == mintSigner, "Invalid signature");
         _signatureUsed[_signature] = true;
 
         uint256 startId = totalSupply() + _startTokenId();
