@@ -28,6 +28,8 @@ contract Nft is
 
     mapping(string => bool) public isMinted;
     mapping(uint256 => string) public domainNameOf;
+    mapping(bytes => bool) public _signatureUsed;
+
 
     string laziNameImages;
 
@@ -64,13 +66,79 @@ contract Nft is
 
     function buyLaziNames(
         string[] calldata _laziNames
+        address _owner,
+        bytes32 _signedMessageHash,
+        bytes memory _signature
     ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+        require(
+            _signatureUsed[_signature] == false,
+            "Signaute is Already Used"
+        );
+
+        require(
+            _signature.length == 65,
+            "Invalid signature length"
+        );
+        address recoveredSigner = verifySignature(_signedMessageHash, _signature);
+        require(recoveredSigner == _owner, "Invalid signature");
+        _signatureUsed[_signature] = true;
+
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
         }
 
         _safeMint(msg.sender, _laziNames.length);
+    }
+
+    function messageHash(string memory _message) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
+    }
+    function getEthSignedMessageHash(
+        bytes32 _messageHash
+    ) public pure returns (bytes32) {
+        /*
+        Signature is produced by signing a keccak256 hash with the following format:
+        "\x19Ethereum Signed Message\n" + len(msg) + msg
+        */
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
+            );
+    }
+
+    // verifySignature helper function
+    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature)
+        public
+        pure
+        returns (address)
+    {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // Check the signature length
+        require(_signature.length == 65, "Invalid signature length");
+
+        // Divide the signature into its three components
+        assembly {
+            r := mload(add(_signature, 32))
+            s := mload(add(_signature, 64))
+            v := and(mload(add(_signature, 65)), 255)
+        }
+
+        // Ensure the validity of v
+        // Ensure the validity of v
+        if (v < 27) {
+            v += 27;
+        }
+        require(v == 27 || v == 28, "Invalid signature v value");
+
+        // Recover the signer's address
+        address signer = ecrecover(_signedMessageHash, v, r, s);
+        require(signer != address(0), "Invalid signature");
+
+        return signer;
     }
 
     // onlyOwner functions
