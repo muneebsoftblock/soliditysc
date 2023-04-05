@@ -120,7 +120,7 @@ contract CyberSyndicate is ERC4907A("CyberSyndicate", "CSE"), Ownable, ERC2981, 
 
     address public signer = msg.sender;
 
-    function set_signer(uint256 _signer) public onlyOwner {
+    function set_signer(address _signer) public onlyOwner {
         signer = _signer;
     }
 }
