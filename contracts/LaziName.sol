@@ -30,8 +30,13 @@ contract Nft is
     mapping(uint256 => string) public domainNameOf;
     mapping(bytes => bool) public _signatureUsed;
 
-
     string laziNameImages;
+
+    address public signer = msg.sender;
+
+    function set_signer(address _signer) public onlyOwner {
+        signer = _signer;
+    }
 
     function registerName(string calldata _laziName, uint256 tokenId) internal {
         require(!isMinted[_laziName], "Nft Domain Already Minted");
@@ -75,24 +80,22 @@ contract Nft is
         _safeMint(msg.sender, _laziNames.length);
     }
 
-
     function buyLaziNamesWhitelist(
-        string[] calldata _laziNames
-        address _owner,
+        string[] calldata _laziNames,
         bytes32 _signedMessageHash,
         bytes memory _signature
     ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
         require(
             _signatureUsed[_signature] == false,
-            "Signaute is Already Used"
+            "Signature is Already Used"
         );
 
-        require(
-            _signature.length == 65,
-            "Invalid signature length"
+        require(_signature.length == 65, "Invalid signature length");
+        address recoveredSigner = verifySignature(
+            _signedMessageHash,
+            _signature
         );
-        address recoveredSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredSigner == _owner, "Invalid signature");
+        require(recoveredSigner == signer, "Invalid signature");
         _signatureUsed[_signature] = true;
 
         uint256 startId = totalSupply() + _startTokenId();
@@ -104,8 +107,12 @@ contract Nft is
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _message)
+            );
     }
+
     function getEthSignedMessageHash(
         bytes32 _messageHash
     ) public pure returns (bytes32) {
@@ -115,16 +122,18 @@ contract Nft is
         */
         return
             keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n32",
+                    _messageHash
+                )
             );
     }
 
     // verifySignature helper function
-    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature)
-        public
-        pure
-        returns (address)
-    {
+    function verifySignature(
+        bytes32 _signedMessageHash,
+        bytes memory _signature
+    ) public pure returns (address) {
         bytes32 r;
         bytes32 s;
         uint8 v;
