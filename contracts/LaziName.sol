@@ -23,8 +23,6 @@ contract LaziName is
     ERC2981
 {
     // Variables
-    uint256 public maxSupply = 10000;
-
     uint256 public laziNamePrice = 0.0001 ether;
     uint256 public saleActiveTime = type(uint256).max;
 
@@ -51,7 +49,7 @@ contract LaziName is
     function airdrop(
         address[] calldata _addresses,
         string[] calldata _laziNames
-    ) external onlyOwner laziNameAvailable(_laziNames.length) {
+    ) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -62,7 +60,7 @@ contract LaziName is
     function airdrop(
         address _address,
         string[] calldata _laziNames
-    ) external onlyOwner laziNameAvailable(_laziNames.length) {
+    ) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -74,13 +72,7 @@ contract LaziName is
     // buy LaziName Nfts
     function buyLaziNames(
         string[] calldata _laziNames
-    )
-        external
-        payable
-        saleActive(saleActiveTime)
-        pricePaid(_laziNames.length)
-        laziNameAvailable(_laziNames.length)
-    {
+    ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -95,10 +87,6 @@ contract LaziName is
             value: address(this).balance
         }("");
         require(success);
-    }
-
-    function set_maxSupply(uint256 _maxSupply) external onlyOwner {
-        maxSupply = _maxSupply;
     }
 
     function set_laziNamePrice(uint256 _laziNamePrice) external onlyOwner {
@@ -128,35 +116,9 @@ contract LaziName is
         _;
     }
 
-    modifier laziNameAvailable(uint256 _laziNameQty) {
-        require(
-            _laziNameQty + totalSupply() <= maxSupply,
-            "Currently are sold out"
-        );
-        _;
-    }
-
     // Price Module
-    uint256 public nftSoldPacketSize = 200;
-
-    function set_nftSoldPacketSize(
-        uint256 _nftSoldPacketSize
-    ) external onlyOwner {
-        nftSoldPacketSize = _nftSoldPacketSize;
-    }
-
-    uint256 public priceIncrease = 0.005 ether;
-
-    function set_priceIncrease(uint256 _priceIncrease) external onlyOwner {
-        priceIncrease = _priceIncrease;
-    }
-
     function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
-        uint256 minted = totalSupply();
-        uint256 packetsMinted = minted / nftSoldPacketSize; // getting benefit from dangerous calculation
-        uint256 basePrice = laziNamePrice * _qty;
-        uint256 priceIncreaseForAll = packetsMinted * priceIncrease * _qty;
-        priceNow = basePrice + priceIncreaseForAll;
+        priceNow = laziNamePrice * _qty;
     }
 
     modifier pricePaid(uint256 _qty) {
