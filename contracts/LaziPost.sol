@@ -81,22 +81,17 @@ contract LaziPost is
         _safeMint(_address, _laziPosts.length);
     }
 
-    function buyLaziPosts(
-        string[] calldata _laziPosts
-    ) external payable saleActive(saleActiveTime) pricePaid(_laziPosts.length) {
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziPosts.length; i++) {
-            registerName(_laziPosts[i], startId + i);
-        }
-
-        _safeMint(msg.sender, _laziPosts.length);
-    }
-
-    function buyLaziPostsWhitelist(
-        string[] calldata _laziPosts,
+    function buyLaziPostsSigned(
+        string calldata _laziPost,
+        uint256 _laziPostPrice,
         bytes32 _signedMessageHash,
         bytes memory _signature
-    ) external payable saleActive(saleActiveTime) pricePaid(_laziPosts.length) {
+    ) external payable saleActive(saleActiveTime) {
+        require(
+            msg.value == _laziPostPrice,
+            "Hey hey, send the right amount of ETH"
+        );
+
         require(
             _signatureUsed[_signature] == false,
             "Signature is Already Used"
@@ -111,11 +106,9 @@ contract LaziPost is
         _signatureUsed[_signature] = true;
 
         uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziPosts.length; i++) {
-            registerName(_laziPosts[i], startId + i);
-        }
+        registerName(_laziPost, startId);
 
-        _safeMint(msg.sender, _laziPosts.length);
+        _safeMint(msg.sender, 1);
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
@@ -206,19 +199,6 @@ contract LaziPost is
     // Helper Modifiers
     modifier saleActive(uint256 _saleActiveTime) {
         require(block.timestamp > _saleActiveTime, "Nope, sale is not open");
-        _;
-    }
-
-    // Price Module
-    function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
-        priceNow = laziPostPrice * _qty;
-    }
-
-    modifier pricePaid(uint256 _qty) {
-        require(
-            msg.value == getPrice(_qty),
-            "Hey hey, send the right amount of ETH"
-        );
         _;
     }
 
