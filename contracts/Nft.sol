@@ -13,6 +13,8 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
     using Counters for Counters.Counter;
     Counters.Counter internal tokenIdCounter;
 
+    uint256 public totalSupply;
+
     string public imagesLink;
     bool public revealed = false;
     uint16 public constant maxSupply = 5000;
@@ -72,6 +74,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
             _safeMint(mintTo, newTokenId);
         }
         userMints[mintTo] += number;
+        totalSupply += number;
     }
 
     function mintNftsWL(address mintTo, uint256 number) internal {
@@ -81,6 +84,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
             _safeMint(mintTo, newTokenId);
         }
         userMintsWL[mintTo] += number;
+        totalSupply += number;
     }
 
     function numberMinted(address sender) public view returns (uint256) {
