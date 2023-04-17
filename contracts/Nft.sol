@@ -2,78 +2,114 @@
 
 pragma solidity ^0.8.17;
 
-import "erc721a/contracts/ERC721A.sol";
 import {DefaultOperatorFilterer} from "https://github.com/ProjectOpenSea/operator-filter-registry/blob/main/src/DefaultOperatorFilterer.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import {ERC4907A} from "https://raw.githubusercontent.com/umer-bigosoft/layerZero/master/contracts/ERC4907A.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "./ERC4907.sol";
+import "./ONFT721Core.sol";
 
-interface OpenSea {
-    function proxies(address) external view returns (address);
-}
+contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilterer, ERC2981, Ownable, ONFT721Core {
+    using Counters for Counters.Counter;
+    Counters.Counter internal tokenIdCounter;
 
-contract CyberSyndicate is ERC4907A("CyberSyndicate", "CSE"), Ownable, ERC2981, DefaultOperatorFilterer {
     string public imagesLink;
     bool public revealed = false;
-    uint256 public maxSupply = 5000;
+    uint16 public constant maxSupply = 5000;
     uint256 public reservedNfts = 50;
     uint256 public buyActiveTime = 0;
-    uint256 public maxMintAmount = 10;
-    string public notRevealedImagesLink;
+    uint8 public constant maxMintAmount = 10;
     uint256 public nftPrice = 0.015 * 1e18;
-    string constant baseExtension = ".json";
 
-    constructor() {
+    string public notRevealedImagesLink;
+
+    mapping(address => uint256) public userMints;
+
+    constructor(
+        uint256 _minGasToTransferAndStore,
+        address _lzEndpoint
+    ) ONFT721Core(_minGasToTransferAndStore, _lzEndpoint) {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
     }
 
-    // public
+    function _debitFrom(address _from, uint16, bytes memory, uint _tokenId) internal virtual override {
+        require(_isApprovedOrOwner(_msgSender(), _tokenId), "ONFT721: not owner not approved");
+        require(ERC721.ownerOf(_tokenId) == _from, "ONFT721: incorrect owner");
+        _transfer(_from, address(this), _tokenId);
+    }
+
+    function _creditTo(uint16, address _toAddress, uint _tokenId) internal virtual override {
+        require(!_exists(_tokenId) || (_exists(_tokenId) && ERC721.ownerOf(_tokenId) == address(this)));
+        if (!_exists(_tokenId)) {
+            _safeMint(_toAddress, _tokenId);
+        } else {
+            _transfer(address(this), _toAddress, _tokenId);
+        }
+    }
+
     function buyNft(uint256 _mintAmount) public payable {
-        require(block.timestamp > buyActiveTime, "the contract is paused");
-        uint256 supply = totalSupply();
-        require(_mintAmount > 0, "need to mint at least 1 NFT");
-        require(_numberMinted(msg.sender) + _mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-        require(supply + _mintAmount + reservedNfts <= maxSupply, "max NFT limit exceeded");
-        require(msg.value == nftPrice * _mintAmount, "insufficient funds");
+        require(block.timestamp > buyActiveTime, "contract paused");
+        require(_mintAmount > 0, "quantity > 0");
+        require(numberMinted(msg.sender) + _mintAmount <= maxMintAmount, "max mint amount exceeded");
+        require(tokenIdCounter.current() + _mintAmount + reservedNfts <= maxSupply, "limit exceeded");
+        require(msg.value == nftPrice * _mintAmount, "low funds");
 
-        _safeMint(msg.sender, _mintAmount);
+        mintNfts(msg.sender, _mintAmount);
     }
 
-    function numberMinted(address _address) public view returns (uint256) {
-        return _numberMinted(_address);
+    function mintNfts(address mintTo, uint256 number) internal {
+        for (uint i = 1; i <= number; i++) {
+            tokenIdCounter.increment();
+            uint256 newTokenId = tokenIdCounter.current();
+            _safeMint(mintTo, newTokenId);
+        }
+        userMints[mintTo] += number;
     }
 
-    ///////////////////////////////////
-    //       OVERRIDE CODE STARTS    //
-    ///////////////////////////////////
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC4907A, ERC2981) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function numberMinted(address sender) public view returns (uint256) {
+        return userMints[sender];
     }
 
-    function _startTokenId() internal pure override returns (uint256) {
-        return 1;
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC4907, ERC2981, ONFT721Core) returns (bool) {
+        return
+            ERC4907.supportsInterface(interfaceId) ||
+            ERC2981.supportsInterface(interfaceId) ||
+            ONFT721Core.supportsInterface(interfaceId);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return imagesLink;
+    function toString(uint256 value) internal pure returns (string memory) {
+        unchecked {
+            uint256 length = Math.log10(value) + 1;
+            string memory buffer = new string(length);
+            uint256 ptr;
+            assembly {
+                ptr := add(buffer, add(32, length))
+            }
+            while (true) {
+                ptr--;
+                assembly {
+                    mstore8(ptr, byte(mod(value, 10), "0123456789abcdef"))
+                }
+                value /= 10;
+                if (value == 0) break;
+            }
+            return buffer;
+        }
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override(ERC721A) returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function tokenURI(uint256 tokenId) public view virtual override(ERC721) returns (string memory) {
+        require(_exists(tokenId), "Nonexistent token");
 
-        if (revealed == false) return notRevealedImagesLink;
+        if (!revealed) return notRevealedImagesLink;
 
-        string memory currentBaseURI = _baseURI();
+        string memory currentBaseURI = imagesLink;
         return
             bytes(currentBaseURI).length > 0
-                ? string(abi.encodePacked(currentBaseURI, _toString(tokenId), baseExtension))
+                ? string(abi.encodePacked(currentBaseURI, toString(tokenId), ".json"))
                 : "";
     }
-
-    //////////////////
-    //  ONLY OWNER  //
-    //////////////////
 
     function withdraw() public payable onlyOwner {
         (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
@@ -83,11 +119,7 @@ contract CyberSyndicate is ERC4907A("CyberSyndicate", "CSE"), Ownable, ERC2981, 
     function airdropNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
         reservedNfts -= _sendNftsTo.length * _howMany;
 
-        for (uint256 i = 0; i < _sendNftsTo.length; i++) _safeMint(_sendNftsTo[i], _howMany);
-    }
-
-    function set_reservedNfts(uint256 _reservedNfts) public onlyOwner {
-        reservedNfts = _reservedNfts;
+        for (uint256 i = 0; i < _sendNftsTo.length; i++) mintNfts(_sendNftsTo[i], _howMany);
     }
 
     function setDefaultRoyalty(address _receiver, uint96 _feeNumerator) public onlyOwner {
@@ -100,10 +132,6 @@ contract CyberSyndicate is ERC4907A("CyberSyndicate", "CSE"), Ownable, ERC2981, 
 
     function set_nftPrice(uint256 _nftPrice) public onlyOwner {
         nftPrice = _nftPrice;
-    }
-
-    function setMaxMintAmount(uint256 _maxMintAmount) public onlyOwner {
-        maxMintAmount = _maxMintAmount;
     }
 
     function set_imagesLink(string memory _imagesLink) public onlyOwner {
@@ -132,6 +160,11 @@ contract Nft is CyberSyndicate {
     mapping(uint256 => uint256) public itemPricePresales;
     uint256 public presaleActiveTime = type(uint256).max;
 
+    constructor(
+        uint256 _minGasToTransferAndStore,
+        address _lzEndpoint
+    ) CyberSyndicate(_minGasToTransferAndStore, _lzEndpoint) {}
+
     function purchaseNft(
         uint256 _howMany,
         bytes32 _signedMessageHash,
@@ -139,18 +172,19 @@ contract Nft is CyberSyndicate {
         bytes memory _signature
     ) external payable {
         require(block.timestamp > presaleActiveTime, "Presale is not active");
-        require(_howMany > 0 && _howMany <= 10, "Invalid quantity of tokens to purchase");
+        require(_howMany > 0 && _howMany <= 10, "Invalid quantity");
 
         require(_signatureUsed[_signature] == false, "Signature is already used");
 
-        require(msg.value == _howMany * itemPricePresales[_rootNumber], "Try to send more ETH");
-        require(_numberMinted(msg.sender) + _howMany <= maxMintPresales[_rootNumber], "Purchase exceeds max allowed");
+        require(msg.value == _howMany * itemPricePresales[_rootNumber], "low eth value");
+        require(numberMinted(msg.sender) + _howMany <= maxMintPresales[_rootNumber], "exceeds max allowed");
 
-        require(_signature.length == 65, "Invalid signature length");
+        require(_signature.length == 65, "Invalid signature");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredSigner == signer, "Invalid signature");
         _signatureUsed[_signature] = true;
-        _safeMint(msg.sender, _howMany);
+
+        mintNfts(msg.sender, _howMany);
     }
 
     // function to return the messageHash
@@ -160,9 +194,9 @@ contract Nft is CyberSyndicate {
 
     function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
         /*
-        Signature is produced by signing a keccak256 hash with the following format:
-        "\x19Ethereum Signed Message\n" + len(msg) + msg
-        */
+            Signature is produced by signing a keccak256 hash with the following format:
+            "\x19Ethereum Signed Message\n" + len(msg) + msg
+            */
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
@@ -173,7 +207,7 @@ contract Nft is CyberSyndicate {
         uint8 v;
 
         // Check the signature length
-        require(_signature.length == 65, "Invalid signature length");
+        require(_signature.length == 65, "Invalid signature");
 
         // Divide the signature into its three components
         assembly {
@@ -205,21 +239,17 @@ contract Nft is CyberSyndicate {
         presaleActiveTime = _presaleActiveTime;
     }
 
-    // implementing Operator Filter Registry
-    // https://opensea.io/blog/announcements/on-creator-fees
-    // https://github.com/ProjectOpenSea/operator-filter-registry#usage
-
     function setApprovalForAll(
         address operator,
         bool approved
-    ) public virtual override onlyAllowedOperatorApproval(operator) {
+    ) public virtual override(ERC721) onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
 
     function approve(
         address operator,
         uint256 tokenId
-    ) public payable virtual override onlyAllowedOperatorApproval(operator) {
+    ) public virtual override(ERC721) onlyAllowedOperatorApproval(operator) {
         super.approve(operator, tokenId);
     }
 
@@ -227,7 +257,7 @@ contract Nft is CyberSyndicate {
         address from,
         address to,
         uint256 tokenId
-    ) public payable virtual override onlyAllowedOperator(from) {
+    ) public virtual override(ERC721) onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -235,7 +265,7 @@ contract Nft is CyberSyndicate {
         address from,
         address to,
         uint256 tokenId
-    ) public payable virtual override onlyAllowedOperator(from) {
+    ) public virtual override(ERC721) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -244,9 +274,7 @@ contract Nft is CyberSyndicate {
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public payable virtual override onlyAllowedOperator(from) {
+    ) public virtual override(ERC721) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 }
-
-contract CyberSyndicateContract is Nft {}
