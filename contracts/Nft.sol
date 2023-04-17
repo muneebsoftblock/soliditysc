@@ -141,7 +141,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
         require(success);
     }
 
-    function airdropNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
+    function airdrop(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
         reservedNfts -= _sendNftsTo.length * _howMany;
         require(tokenIdCounter.current() + _sendNftsTo.length * _howMany <= maxSupply, "limit exceeded");
 
@@ -180,7 +180,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
 
     // WL Config
 
-    function purchaseNftWL(
+    function purchaseWhitelist(
         uint256 _howMany,
         bytes32 _signedMessageHash,
         uint256 _rootNumber,
