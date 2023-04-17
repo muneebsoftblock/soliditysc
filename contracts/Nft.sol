@@ -24,6 +24,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
     string public notRevealedImagesLink;
 
     mapping(address => uint256) public userMints;
+    mapping(address => uint256) public userMintsWL;
 
     constructor(
         uint256 _minGasToTransferAndStore,
@@ -66,8 +67,21 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
         userMints[mintTo] += number;
     }
 
+    function mintNftsWL(address mintTo, uint256 number) internal {
+        for (uint i = 1; i <= number; i++) {
+            tokenIdCounter.increment();
+            uint256 newTokenId = tokenIdCounter.current();
+            _safeMint(mintTo, newTokenId);
+        }
+        userMintsWL[mintTo] += number;
+    }
+
     function numberMinted(address sender) public view returns (uint256) {
         return userMints[sender];
+    }
+
+    function numberMintedWL(address sender) public view returns (uint256) {
+        return userMintsWL[sender];
     }
 
     function supportsInterface(
@@ -163,7 +177,10 @@ contract Nft is CyberSyndicate {
     constructor(
         uint256 _minGasToTransferAndStore,
         address _lzEndpoint
-    ) CyberSyndicate(_minGasToTransferAndStore, _lzEndpoint) {}
+    ) CyberSyndicate(_minGasToTransferAndStore, _lzEndpoint) {
+        maxMintPresales[0] = 5;
+        itemPricePresales[0] = 0.01 ether;
+    }
 
     function purchaseNft(
         uint256 _howMany,
@@ -177,14 +194,14 @@ contract Nft is CyberSyndicate {
         require(_signatureUsed[_signature] == false, "Signature is already used");
 
         require(msg.value == _howMany * itemPricePresales[_rootNumber], "low eth value");
-        require(numberMinted(msg.sender) + _howMany <= maxMintPresales[_rootNumber], "exceeds max allowed");
+        require(numberMintedWL(msg.sender) + _howMany <= maxMintPresales[_rootNumber], "exceeds max allowed");
 
         require(_signature.length == 65, "Invalid signature");
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredSigner == signer, "Invalid signature");
         _signatureUsed[_signature] = true;
 
-        mintNfts(msg.sender, _howMany);
+        mintNftsWL(msg.sender, _howMany);
     }
 
     // function to return the messageHash
