@@ -19,18 +19,25 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
     uint256 public reservedNfts = 50;
     uint256 public buyActiveTime = 0;
     uint8 public constant maxMintAmount = 10;
-    uint256 public nftPrice = 0.015 * 1e18;
+    uint256 public nftPrice = 0.00015 * 1e18;
 
     string public notRevealedImagesLink;
-
     mapping(address => uint256) public userMints;
+
+    // multiple WL configs
     mapping(address => uint256) public userMintsWL;
+    mapping(bytes => bool) public _signatureUsed;
+    mapping(uint256 => uint256) public maxMintPresales;
+    mapping(uint256 => uint256) public itemPricePresales;
+    uint256 public presaleActiveTime = type(uint256).max;
 
     constructor(
         uint256 _minGasToTransferAndStore,
         address _lzEndpoint
     ) ONFT721Core(_minGasToTransferAndStore, _lzEndpoint) {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
+        maxMintPresales[0] = 5;
+        itemPricePresales[0] = 0.01 ether;
     }
 
     function _debitFrom(address _from, uint16, bytes memory, uint _tokenId) internal virtual override {
@@ -132,6 +139,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
 
     function airdropNft(address[] calldata _sendNftsTo, uint256 _howMany) external onlyOwner {
         reservedNfts -= _sendNftsTo.length * _howMany;
+        require(tokenIdCounter.current() + _sendNftsTo.length * _howMany <= maxSupply, "limit exceeded");
 
         for (uint256 i = 0; i < _sendNftsTo.length; i++) mintNfts(_sendNftsTo[i], _howMany);
     }
@@ -165,24 +173,10 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
     function set_signer(address _signer) public onlyOwner {
         signer = _signer;
     }
-}
 
-contract Nft is CyberSyndicate {
-    // multiple presale configs
-    mapping(bytes => bool) public _signatureUsed;
-    mapping(uint256 => uint256) public maxMintPresales;
-    mapping(uint256 => uint256) public itemPricePresales;
-    uint256 public presaleActiveTime = type(uint256).max;
+    // WL Config
 
-    constructor(
-        uint256 _minGasToTransferAndStore,
-        address _lzEndpoint
-    ) CyberSyndicate(_minGasToTransferAndStore, _lzEndpoint) {
-        maxMintPresales[0] = 5;
-        itemPricePresales[0] = 0.01 ether;
-    }
-
-    function purchaseNft(
+    function purchaseNftWL(
         uint256 _howMany,
         bytes32 _signedMessageHash,
         uint256 _rootNumber,
@@ -200,6 +194,8 @@ contract Nft is CyberSyndicate {
         address recoveredSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredSigner == signer, "Invalid signature");
         _signatureUsed[_signature] = true;
+
+        require(tokenIdCounter.current() + _howMany + reservedNfts <= maxSupply, "limit exceeded");
 
         mintNftsWL(msg.sender, _howMany);
     }
@@ -241,10 +237,10 @@ contract Nft is CyberSyndicate {
         require(v == 27 || v == 28, "Invalid signature v value");
 
         // Recover the signer's address
-        address signer = ecrecover(_signedMessageHash, v, r, s);
-        require(signer != address(0), "Invalid signature");
+        address signerRec = ecrecover(_signedMessageHash, v, r, s);
+        require(signerRec != address(0), "Invalid signature");
 
-        return signer;
+        return signerRec;
     }
 
     function setPresale(uint256 _rootNumber, uint256 _maxMintPresales, uint256 _itemPricePresale) external onlyOwner {
