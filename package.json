@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "run-blockchain": "npx ganache-cli",
-    "compile": "truffle compile",
-    "test": "truffle test"
+    "compile": "npx truffle compile",
+    "test": "npx truffle test"
   },
   "keywords": [],
   "author": "",
