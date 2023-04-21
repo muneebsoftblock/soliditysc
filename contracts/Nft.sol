@@ -39,7 +39,7 @@ contract CyberSyndicate is ERC4907("CyberSyndicate", "CSE"), DefaultOperatorFilt
     ) ONFT721Core(_minGasToTransferAndStore, _lzEndpoint) {
         _setDefaultRoyalty(msg.sender, 500); // 5.00 %
         maxMintPresales[0] = 5;
-        itemPricePresales[0] = 0.01 ether;
+        itemPricePresales[0] = 0.0001 * 1e18;
     }
 
     function _debitFrom(address _from, uint16, bytes memory, uint _tokenId) internal virtual override {
