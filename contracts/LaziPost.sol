@@ -23,6 +23,7 @@ contract LaziPost is
     ERC2981
 {
     mapping(string => bool) public isMinted;
+    mapping(uint256 => bool) private isPurchased;
     mapping(uint256 => string) public domainNameOf;
     mapping(bytes => bool) public _signatureUsed;
 
@@ -108,7 +109,34 @@ contract LaziPost is
         uint256 startId = totalSupply() + _startTokenId();
         registerName(_laziPost, startId);
 
-        _safeMint(msg.sender, 1);
+        // Mark the token as purchased
+        isPurchased[startId] = true;
+
+        // Lazy mint the token if it has not been minted before
+            lazyMint(startId, _laziPost);
+
+        // Transfer ownership of the token to the buyer
+        _transfer(address(this), msg.sender, tokenId);
+
+        // _safeMint(msg.sender, 1);
+    }
+
+    function lazyMint(
+        uint256 tokenId,
+        string calldata _laziPost
+    ) public onlyOwner {
+        require(isPurchased[tokenId], "Token must be purchased before minting");
+        require(isMinted[_laziPost], "Token is not Registered");
+        _safeMint(address(this), tokenId);
+        domainNameOf[tokenId] = _laziPost;
+    }
+
+    //unpurchased token minting
+    function mintUnpurchasedToken(string memory _laziPost) public onlyOwner {
+        require(!isMinted[_laziPost], "Token is already minted");
+        uint256 tokenId = totalSupply() + _startTokenId();
+        isMinted[_laziPost] = true;
+        _safeMint(address(this), tokenId);
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
