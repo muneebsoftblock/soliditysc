@@ -48,7 +48,6 @@ contract LaziPost is
 
     function registerName(string calldata _laziPost, uint256 tokenId) internal {
         require(!isMinted[_laziPost], "Nft Domain Already Minted");
-        isMinted[_laziPost] = true;
         domainNameOf[tokenId] = _laziPost;
     }
 
@@ -127,8 +126,9 @@ contract LaziPost is
     ) public onlyOwner {
         require(isPurchased[tokenId], "Token must be purchased before minting");
         require(isMinted[_laziPost], "Token is not Registered");
-        _safeMint(address(this), tokenId);
+        isMinted[_laziPost] = true;
         domainNameOf[tokenId] = _laziPost;
+        _safeMint(address(this), tokenId);
     }
 
     //unpurchased token minting
