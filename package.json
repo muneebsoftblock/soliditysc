@@ -6,8 +6,10 @@
   "scripts": {
     "run-blockchain": "npx ganache-cli",
     "compile": "npx truffle compile",
+    "deploy": "npx truffle deploy",
     "test": "npx truffle test",
-    "deploy": "npx truffle deploy"
+    "verify": "truffle run verify CyberSyndicate --network mumbai",
+    "verify specific address": "truffle run verify CyberSyndicate@0x675b74f5BFD2F4be2823eC0e1063BA70dEAB867A --network mumbai"
   },
   "keywords": [],
   "author": "",

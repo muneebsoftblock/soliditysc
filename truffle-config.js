@@ -3,6 +3,7 @@ require('dotenv').config();
 const MNEMONIC = process.env.MNEMONIC;
 const INFURA_TOKEN = process.env.INFURA_TOKEN;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
+const POLYGON_KEY = process.env.POLYGON_KEY;
 
 module.exports = {
   networks: {
@@ -16,7 +17,6 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider(MNEMONIC, "https://rpc-mumbai.maticvigil.com");
       },
-      
     },
     ethMainnet: {
       network_id: "1",
@@ -41,6 +41,7 @@ module.exports = {
   },
   api_keys: {
     etherscan: ETHERSCAN_KEY,
+    polygonscan: POLYGON_KEY,
   },
   plugins: ["truffle-plugin-verify"],
 };
