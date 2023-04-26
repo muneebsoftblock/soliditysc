@@ -7,23 +7,30 @@ const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 module.exports = {
   networks: {
     development: {
-      network_id: '*',
+      network_id: "*",
       port: 8545,
-      host: '127.0.0.1',
+      host: "127.0.0.1",
+    },
+    mumbai: {
+      network_id: 80001,
+      provider: () => {
+        return new HDWalletProvider(MNEMONIC, "https://rpc-mumbai.maticvigil.com");
+      },
+      
     },
     ethMainnet: {
-      network_id: '1',
+      network_id: "1",
       provider: () => {
-        return new HDWalletProvider(MNEMONIC, 'https://mainnet.infura.io/v3/' + INFURA_TOKEN);
+        return new HDWalletProvider(MNEMONIC, "https://mainnet.infura.io/v3/" + INFURA_TOKEN);
       },
     },
   },
   mocha: {
-    reporter: 'eth-gas-reporter',
+    reporter: "eth-gas-reporter",
   },
   compilers: {
     solc: {
-      version: '0.8.14',
+      version: "0.8.17",
       settings: {
         optimizer: {
           enabled: true,
@@ -35,5 +42,5 @@ module.exports = {
   api_keys: {
     etherscan: ETHERSCAN_KEY,
   },
-  plugins: ['truffle-plugin-verify'],
+  plugins: ["truffle-plugin-verify"],
 };

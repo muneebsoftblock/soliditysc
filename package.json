@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "run-blockchain": "npx ganache-cli",
-    "compile": "truffle compile",
-    "test": "truffle test"
+    "compile": "npx truffle compile",
+    "test": "npx truffle test",
+    "deploy": "npx truffle deploy"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@truffle/hdwallet-provider": "^2.0.11",
     "dotenv": "^16.0.1",
     "erc721a": "^3.3.0",
+    "operator-filter-registry": "^1.4.1",
     "uws": "^200.0.0"
   },
   "devDependencies": {

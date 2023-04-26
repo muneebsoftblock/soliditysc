@@ -4,12 +4,9 @@
 //   deployer.deploy(sc);
 // };
 
-const DIGI = artifacts.require("DIGI");
-const Digicollect = artifacts.require("Digicollect");
+const CyberSyndicate = artifacts.require("CyberSyndicate");
 
 module.exports = function (deployer) {
-  deployer.deploy(DIGI).then(function() {
-    return deployer.deploy(Digicollect, DIGI.address);
-  });
+  deployer.deploy(CyberSyndicate, 62000, "0xf37Dc8A322e93e94bdf1d8C6a8ddB1b28e4eE16d");
 };
 
