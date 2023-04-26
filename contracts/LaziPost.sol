@@ -2,6 +2,7 @@
 
 // getPrice warning
 
+//
 pragma solidity 0.8.14;
 
 // For Remix
@@ -45,7 +46,7 @@ contract LaziPost is
         autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
     }
 
-    function registerName(string calldata _laziPost, uint256 tokenId) internal {
+    function registerName(string calldata _laziPost, uint256 tokenId) external {
         require(!isMinted[_laziPost], "Nft Domain Already Registered");
         domainNameOf[tokenId] = _laziPost;
     }
@@ -112,7 +113,7 @@ contract LaziPost is
         address owner = ownerOf(startId);
 
         // Lazy mint the token if it has not been minted before
-            lazyMint(startId, _laziPost);
+        lazyMint(startId, _laziPost);
 
         // Transfer ownership of the token to the buyer
         safeTransferFrom(owner, msg.sender, startId);
@@ -126,9 +127,7 @@ contract LaziPost is
     ) public onlyOwner {
         require(isPurchased[tokenId], "Token must be purchased before minting");
         require(isMinted[_laziPost], "Token is not Registered");
-        isMinted[_laziPost] = true;
-        domainNameOf[tokenId] = _laziPost;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(address(this), tokenId);
     }
 
     //unpurchased token minting
