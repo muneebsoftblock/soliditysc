@@ -75,4 +75,15 @@ contract StakingRewards {
     function calculateUserRewards(address account) external view returns (uint256) {
         return earned(account);
     }
+
+    function getAPR() public view returns (uint256) {
+        return rewardRate * 365 days / totalStaked;
+    }
+
+    function getAPY() external view returns (uint256) {
+        uint256 apr = getAPR();
+        uint256 compoundFactor = 1e18 + apr / 365 days;
+        uint256 apy = compoundFactor ** 365 days - 1;
+        return apy;
+    }
 }
