@@ -65,11 +65,11 @@ contract StakingRewards {
         if (totalStaked == 0) {
             return rewardPerTokenStored;
         }
-        return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / totalStaked);
+        return rewardPerTokenStored + (((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / totalStaked);
     }
 
     function earned(address account) internal view returns (uint256) {
-        return (stakedBalances[account] * (rewardPerToken() - lastRewardPerTokenPaid[account]) / 1e18) + rewardsEarned[account];
+        return ((stakedBalances[account] * (rewardPerToken() - lastRewardPerTokenPaid[account])) / 1e18) + rewardsEarned[account];
     }
 
     function calculateUserRewards(address account) external view returns (uint256) {
@@ -77,7 +77,7 @@ contract StakingRewards {
     }
 
     function getAPR() public view returns (uint256) {
-        return rewardRate * 365 days / totalStaked;
+        return (rewardRate * 365 days) / totalStaked;
     }
 
     function getAPY() external view returns (uint256) {
