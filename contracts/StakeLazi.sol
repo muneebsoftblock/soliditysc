@@ -82,7 +82,7 @@ contract StakingRewards {
 
     function getAPY() external view returns (uint256) {
         uint256 apr = getAPR();
-        uint256 compoundFactor = 1e18 + apr / 365 days;
+        uint256 compoundFactor = (1e18 + apr) / 365 days;
         uint256 apy = compoundFactor ** 365 days - 1;
         return apy;
     }
