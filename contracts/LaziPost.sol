@@ -23,7 +23,6 @@ contract LaziPost is
     ERC2981
 {
     mapping(string => bool) public isMinted;
-    mapping(uint256 => bool) private isPurchased;
     mapping(uint256 => string) public domainNameOf;
     mapping(bytes => bool) public _signatureUsed;
 
@@ -46,8 +45,9 @@ contract LaziPost is
         autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
     }
 
-    function registerName(string calldata _laziPost, uint256 tokenId) external {
-        require(!isMinted[_laziPost], "Nft Domain Already Registered");
+    function registerName(string calldata _laziPost, uint256 tokenId) internal {
+        require(!isMinted[_laziPost], "Nft Domain Already Minted");
+        isMinted[_laziPost] = true;
         domainNameOf[tokenId] = _laziPost;
     }
 
@@ -108,34 +108,7 @@ contract LaziPost is
         uint256 startId = totalSupply() + _startTokenId();
         registerName(_laziPost, startId);
 
-        // Mark the token as purchased
-        isPurchased[startId] = true;
-        address owner = ownerOf(startId);
-
-        // Lazy mint the token if it has not been minted before
-        lazyMint(startId, _laziPost);
-
-        // Transfer ownership of the token to the buyer
-        safeTransferFrom(owner, msg.sender, startId);
-
-        // _safeMint(msg.sender, 1);
-    }
-
-    function lazyMint(
-        uint256 tokenId,
-        string calldata _laziPost
-    ) public onlyOwner {
-        require(isPurchased[tokenId], "Token must be purchased before minting");
-        require(isMinted[_laziPost], "Token is not Registered");
-        _safeMint(address(this), tokenId);
-    }
-
-    //unpurchased token minting
-    function mintUnpurchasedToken(string memory _laziPost) public onlyOwner {
-        require(!isMinted[_laziPost], "Token is already minted");
-        uint256 tokenId = totalSupply() + _startTokenId();
-        isMinted[_laziPost] = true;
-        _safeMint(address(this), tokenId);
+        _safeMint(msg.sender, 1);
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
