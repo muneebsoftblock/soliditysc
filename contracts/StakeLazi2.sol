@@ -157,12 +157,6 @@ contract Staking is ERC721Holder, Ownable {
         return apyDistribution[daysToStake];
     }
 
-    // function getCurrentAPR() public view returns (uint256) {
-    //     uint256 totalStaked = rewardToken.balanceOf(address(this));
-    //     uint256 totalRewardsPerYear = (TOTAL_REWARD_TOKENS * SECONDS_PER_DAY) / REWARD_PERIOD;
-    //     return (totalRewardsPerYear * 100) / totalStaked;
-    // }
-
     function getCurrentAPR() public view returns (uint256) {
         uint256 totalStaked = rewardToken.balanceOf(address(this));
 
