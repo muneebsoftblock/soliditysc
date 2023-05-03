@@ -27,6 +27,11 @@ contract StakingLazi is ERC721Holder, Ownable {
     mapping(uint256 => uint256) public rewardTokensDistribution;
     uint256 public constant TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
 
+    constructor(IERC20 _erc20, IERC721 _erc721) {
+        erc20 = _erc20;
+        erc721 = _erc721;
+    }
+
     function unstake() external {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.erc20Amount > 0, "No stake found");

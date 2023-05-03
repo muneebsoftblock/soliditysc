@@ -70,7 +70,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         _safeMint(_address, _laziPosts.length);
     }
 
-    function buyLaziPost(string[] calldata _laziNames) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+    function buyLaziPost(string[] calldata _laziNames) external payable saleActive(saleActiveTime)  {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
