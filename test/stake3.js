@@ -102,6 +102,11 @@ contract("Staking", (accounts) => {
         // console.log("Current APY:", apy.toString())
     })
 
+    it("should get current APY", async () => {
+        // const apy = await staking.getCurrentAPY()
+        // console.log("Current APY:", apy.toString())
+    })
+
     it("should distribute rewards correctly after one day", async () => {
         // User A stakes
         const userA = accounts[1]
@@ -113,6 +118,10 @@ contract("Staking", (accounts) => {
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
         await staking.stake(userAStakeAmount, userALockPeriod, userAERC721TokenIds, { from: userA })
 
+        const daysToStake = [0, 30, 60, 90, 180, 365]
+        const lockPeriodDistributions  = await staking.getDistributions(daysToStake)
+
+        console.log({ lockPeriodDistributions })
         // User B stakes
         const userB = accounts[2]
         const userBStakeAmount = "75000" + "0".repeat(18)

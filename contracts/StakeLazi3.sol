@@ -44,6 +44,9 @@ contract StakingLazi is ERC721Holder, Ownable {
             erc721.safeTransferFrom(address(this), msg.sender, stakeInfo.erc721TokenIds[i]);
         }
 
+        uint256 daysToStake = stakeInfo.lockPeriod / 1 days;
+        updateDistributions(daysToStake, 0, rewardAmount);
+
         totalWeightedStake -= stakeInfo.weightedStake;
         totalStaked -= stakeInfo.erc20Amount;
         delete stakes[msg.sender];
@@ -55,6 +58,7 @@ contract StakingLazi is ERC721Holder, Ownable {
 
         IERC20(erc20).transfer(msg.sender, rewardAmount);
         stakes[msg.sender].claimedRewards += rewardAmount;
+        updateDistributions(0, 0, rewardAmount);
     }
 
     function withdrawERC20(address _erc20) external onlyOwner {
@@ -115,5 +119,32 @@ contract StakingLazi is ERC721Holder, Ownable {
 
         totalStaked += erc20Amount;
         totalWeightedStake += weightedStake;
+        updateDistributions(lockPeriodInDays, erc20Amount, 0);
+    }
+
+    function updateDistributions(uint256 daysToStake, uint256 erc20Amount, uint256 rewards) private {
+        lockPeriodDistribution[daysToStake] += 1;
+        stakedTokensDistribution[daysToStake] += erc20Amount;
+        rewardTokensDistribution[daysToStake] += rewards;
+    }
+
+    function getDistributions(
+        uint256[] calldata daysToStake
+    )
+        external
+        view
+        returns (uint256[] memory lockPeriodDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
+    {
+        uint256 length = daysToStake.length;
+        lockPeriodDistributions = new uint256[](length);
+        stakedTokenDistributions = new uint256[](length);
+        rewardTokenDistributions = new uint256[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            uint256 day = daysToStake[i];
+            lockPeriodDistributions[i] = lockPeriodDistribution[day];
+            stakedTokenDistributions[i] = stakedTokensDistribution[day];
+            rewardTokenDistributions[i] = rewardTokensDistribution[day];
+        }
     }
 }
