@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+
+/**
+ * @title StakingLazi
+ * @notice A staking contract that allows users to stake ERC20 tokens along with ERC721 tokens to earn rewards.
+ * Users can stake their tokens for a specified lock period and earn rewards based on the staked amount and the number of staked ERC721 tokens.
+ * The contract also provides functions to unstake tokens, harvest rewards, and view distributions for different lock periods.
+ */
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
