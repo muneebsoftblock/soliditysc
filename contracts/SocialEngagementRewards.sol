@@ -39,11 +39,10 @@ contract LaziEngagementRewards {
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
 
     /**
-
-@notice Contract constructor
-@param _laziToken The LAZI token contract address
-@param _laziUsername The ERC721 token contract address
-*/
+    @notice Contract constructor
+    @param _laziToken The LAZI token contract address
+    @param _laziUsername The ERC721 token contract address
+    */
     constructor(address _laziToken, address _laziUsername) {
         laziToken = IERC20(_laziToken);
         erc721Token = IERC721(_laziUsername);
@@ -51,14 +50,14 @@ contract LaziEngagementRewards {
 
     /**
 
-@notice Stake LAZI tokens and ERC721 tokens
+    @notice Stake LAZI tokens and ERC721 tokens
 
-@param _stakedLazi Amount of LAZI tokens to stake
+    @param _stakedLazi Amount of LAZI tokens to stake
 
-@param _stakeDuration Duration of the stake in days
+    @param _stakeDuration Duration of the stake in days
 
-@param _laziUsernameIds Array of ERC721 token IDs to stake
-*/
+    @param _laziUsernameIds Array of ERC721 token IDs to stake
+    */
     function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external {
         require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
         require(_laziUsernameIds.length <= maxUserMultiplierTokens, "Too many ERC721 tokens");
@@ -83,9 +82,8 @@ contract LaziEngagementRewards {
     }
 
     /**
-
-@notice Unstake LAZI tokens and ERC721 tokens
-*/
+     * @notice Unstake LAZI tokens and ERC721 tokens
+     */
 
     function unstake() external {
         User storage user = users[msg.sender];
