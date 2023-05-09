@@ -109,11 +109,11 @@ contract LaziEngagementRewards {
      * @param _user The address of the user
      * @return The multiplier value
      */
-    function getMultiplier(address _user) public view returns (uint256) {
+    function getMultiplier(address _user, uint contributionScore) public view returns (uint256) {
         User storage user = users[_user];
         uint256 S = (user.stakedLazi * 1e18) / (totalStakedLazi / totalUsers);
         uint256 T = (user.stakeDuration * 1e18) / (totalStakedDuration / totalUsers);
-        uint256 U = user.erc721TokenIds.length;
+        uint256 U = contributionScore;
 
         return S * T * U;
     }
@@ -123,10 +123,15 @@ contract LaziEngagementRewards {
      * @param _user The address of the user
      * @return The reward value
      */
-    function calculateReward(address _user, string memory contributionScore) public view returns (uint256) {
-        require(contributionScore, "Contribution score missing");
+
+    function calculateReward(address _user, uint256 contributionScore) public view returns (uint256) {
+        // ECDSA
+        // (account, contributionScore) = decrypt(encryptedContributionScore)
+        // require(account == signerAddr, "signer invalid");
+        // require(contributionScore > 0, "Contribution score missing");
+
         User storage user = users[_user];
-        uint256 multiplier = getMultiplier(_user);
+        uint256 multiplier = getMultiplier(_user, contributionScore);
         // uint256 contributionScore = user.stakedLazi * multiplier;
         uint256 weightedContribution = contributionScore * w1;
         uint256 weightedDuration = user.stakeDuration * w2;
