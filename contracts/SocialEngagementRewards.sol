@@ -123,10 +123,11 @@ contract LaziEngagementRewards {
      * @param _user The address of the user
      * @return The reward value
      */
-    function calculateReward(address _user) public view returns (uint256) {
+    function calculateReward(address _user, string memory contributionScore) public view returns (uint256) {
+        require(contributionScore, "Contribution score missing");
         User storage user = users[_user];
         uint256 multiplier = getMultiplier(_user);
-        uint256 contributionScore = user.stakedLazi * multiplier;
+        // uint256 contributionScore = user.stakedLazi * multiplier;
         uint256 weightedContribution = contributionScore * w1;
         uint256 weightedDuration = user.stakeDuration * w2;
         uint256 weightedStakedAmount = user.stakedLazi * w3;
