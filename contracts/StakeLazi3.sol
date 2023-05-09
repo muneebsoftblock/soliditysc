@@ -19,7 +19,7 @@ contract StakingLazi is ERC721Holder, Ownable {
         uint256 erc20Amount;
         uint256 lockPeriod;
         uint256[] erc721TokenIds;
-        uint256 entryTimestamp;
+        uint256 stakeStartTime;
         uint256 weightedStake;
         uint256 claimedRewards;
     }
@@ -29,11 +29,13 @@ contract StakingLazi is ERC721Holder, Ownable {
     uint256 public totalStaked;
     uint256 public totalWeightedStake;
     mapping(address => StakeInfo) public stakes;
-    uint256 public constant REWARD_PERIOD = 4 * 365 days;
     mapping(uint256 => uint256) public lockPeriodDistribution;
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
-    uint256 public constant TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
+
+    // TODO: make setters, onlyOwner
+    uint256 public REWARD_PERIOD = 4 * 365 days;
+    uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
 
     constructor(IERC20 _erc20, IERC721 _erc721) {
         erc20 = _erc20;
@@ -43,7 +45,7 @@ contract StakingLazi is ERC721Holder, Ownable {
     function unstake() external {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.erc20Amount > 0, "No stake found");
-        require(block.timestamp >= stakeInfo.entryTimestamp + stakeInfo.lockPeriod, "Lock period not reached");
+        require(block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod, "Lock period not reached");
 
         uint256 rewardAmount = getUserRewards(msg.sender);
         IERC20(erc20).transfer(msg.sender, stakeInfo.erc20Amount + rewardAmount);
@@ -77,7 +79,7 @@ contract StakingLazi is ERC721Holder, Ownable {
 
     function getUserRewards(address user) public view returns (uint256) {
         StakeInfo storage stakeInfo = stakes[user];
-        uint256 elapsedTime = block.timestamp - stakeInfo.entryTimestamp;
+        uint256 elapsedTime = block.timestamp - stakeInfo.stakeStartTime;
         uint256 rewardAmount = (stakeInfo.weightedStake * elapsedTime * TOTAL_REWARD_TOKENS) / (totalWeightedStake * REWARD_PERIOD);
         return rewardAmount - stakeInfo.claimedRewards;
     }
@@ -134,7 +136,7 @@ contract StakingLazi is ERC721Holder, Ownable {
             erc20Amount: erc20Amount,
             lockPeriod: lockPeriod,
             erc721TokenIds: erc721TokenIds,
-            entryTimestamp: block.timestamp,
+            stakeStartTime: block.timestamp,
             weightedStake: weightedStake,
             claimedRewards: 0
         });
@@ -168,5 +170,13 @@ contract StakingLazi is ERC721Holder, Ownable {
             stakedTokenDistributions[i] = stakedTokensDistribution[day];
             rewardTokenDistributions[i] = rewardTokensDistribution[day];
         }
+    }
+
+    function setRewardPeriod(uint256 period) external onlyOwner {
+        REWARD_PERIOD = period;
+    }
+
+    function setTotalRewardTokens(uint256 totalTokens) external onlyOwner {
+        TOTAL_REWARD_TOKENS = totalTokens;
     }
 }

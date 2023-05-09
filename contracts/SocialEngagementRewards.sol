@@ -21,19 +21,30 @@ contract LaziEngagementRewards {
 
     struct User {
         uint256 stakedLazi;
+        uint256 stakedLaziWeighted;
         uint256 stakeStartTime;
         uint256 stakeDuration;
+        uint256 stakeDurationWeighted;
         uint256[] erc721TokenIds;
     }
 
     mapping(address => User) public users;
+
+    uint256 public totalUsers;
+
     uint256 public totalStakedLazi;
     uint256 public totalStakedDuration;
-    uint256 public totalUsers;
+
+    uint256 public totalWeightedStakedLazi;
+    uint256 public totalWeightedStakedDuration;
 
     uint256 public w1 = 60;
     uint256 public w2 = 25;
     uint256 public w3 = 15;
+
+    // TODO: make setters, onlyOwner
+    uint256 public REWARD_PERIOD = 4 * 365 days;
+    uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
@@ -59,6 +70,8 @@ contract LaziEngagementRewards {
     @param _laziUsernameIds Array of ERC721 token IDs to stake
     */
     function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external {
+        // require(unstake first to stake again);
+
         require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
         require(_laziUsernameIds.length <= maxUserMultiplierTokens, "Too many ERC721 tokens");
 
@@ -77,6 +90,10 @@ contract LaziEngagementRewards {
         totalStakedLazi += _stakedLazi;
         totalStakedDuration += _stakeDuration;
         totalUsers += 1;
+
+        uint256 multiplier = getMultiplier(user);
+        totalWeightedStakedLazi += (_stakedLazi * multiplier) / 1e18;
+        totalWeightedStakedDuration += (_stakeDuration * multiplier) / 1e18;
 
         emit Staked(msg.sender, _stakedLazi, _stakeDuration, _laziUsernameIds);
     }
@@ -106,16 +123,30 @@ contract LaziEngagementRewards {
 
     /**
      * @notice Calculate the multiplier for a user's stake
-     * @param _user The address of the user
+     * @param user The user information
      * @return The multiplier value
      */
-    function getMultiplier(address _user, uint contributionScore) public view returns (uint256) {
-        User storage user = users[_user];
-        uint256 S = (user.stakedLazi * 1e18) / (totalStakedLazi / totalUsers);
-        uint256 T = (user.stakeDuration * 1e18) / (totalStakedDuration / totalUsers);
-        uint256 U = contributionScore;
+    function getMultiplier(User memory user) public view returns (uint256) {
+        uint256 S = (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
+        uint256 T = (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
+        uint256 U;
 
-        return S * T * U;
+        uint erc721Tokens = user.erc721TokenIds.length;
+        if (erc721Tokens == 0) {
+            U = 1.00 * 1e18;
+        } else if (erc721Tokens == 1) {
+            U = 1.20 * 1e18;
+        } else if (erc721Tokens == 2) {
+            U = 1.40 * 1e18;
+        } else if (erc721Tokens == 3) {
+            U = 1.60 * 1e18;
+        } else if (erc721Tokens == 4) {
+            U = 1.80 * 1e18;
+        } else {
+            U = 2.00 * 1e18;
+        }
+
+        return (S * T * U) / 1e18;
     }
 
     /**
@@ -124,18 +155,23 @@ contract LaziEngagementRewards {
      * @return The reward value
      */
 
-    function calculateReward(address _user, uint256 contributionScore) public view returns (uint256) {
+    function getUserRewards(address _user, uint256 contributionScoreWeighted, uint256 totalContributionScoreWeighted) public view returns (uint256) {
         // ECDSA
-        // (account, contributionScore) = decrypt(encryptedContributionScore)
+        // bytes calldata encryptedData
+        // (account, contributionScoreWeighted, totalContributionScoreWeighted) = decrypt(encryptedData)
         // require(account == signerAddr, "signer invalid");
-        // require(contributionScore > 0, "Contribution score missing");
+        // require(contributionScoreWeighted > 0, "Contribution score missing");
+        // ((user’s contribution score * user’s multiplier)/ total of all user’s (user’s contribution score * user’s multiplier))  *  49315
 
         User storage user = users[_user];
-        uint256 multiplier = getMultiplier(_user, contributionScore);
-        // uint256 contributionScore = user.stakedLazi * multiplier;
-        uint256 weightedContribution = contributionScore * w1;
-        uint256 weightedDuration = user.stakeDuration * w2;
-        uint256 weightedStakedAmount = user.stakedLazi * w3;
+        uint256 elapsedTime = block.timestamp - user.stakeStartTime;
+
+        uint256 weightedContribution = (((contributionScoreWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalWeightedStakedDuration) *
+            REWARD_PERIOD) * w1;
+        uint256 weightedDuration = (((user.stakeDurationWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalWeightedStakedDuration) *
+            REWARD_PERIOD) * w2;
+        uint256 weightedStakedAmount = (((user.stakedLaziWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalWeightedStakedLazi) * REWARD_PERIOD) *
+            w3;
 
         uint256 totalReward = weightedContribution + weightedDuration + weightedStakedAmount;
         return totalReward;
