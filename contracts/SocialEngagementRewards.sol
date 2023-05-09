@@ -2,8 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /**
 
@@ -13,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 Users can stake their tokens for a specified duration and earn rewards based on the staked amount, duration, and the number of staked ERC721 tokens.
 */
-contract LaziEngagementRewards {
+contract LaziEngagementRewards is Ownable, ERC721Holder {
     IERC20 public laziToken;
     IERC721 public erc721Token;
     uint256 public maxEngagementDays = 2000;
@@ -58,6 +60,8 @@ contract LaziEngagementRewards {
         laziToken = IERC20(_laziToken);
         erc721Token = IERC721(_laziUsername);
     }
+
+    // TODO: add harvest function
 
     /**
 
@@ -156,7 +160,7 @@ contract LaziEngagementRewards {
      */
 
     function getUserRewards(address _user, uint256 contributionScoreWeighted, uint256 totalContributionScoreWeighted) public view returns (uint256) {
-        // ECDSA
+        // TODO:
         // bytes calldata encryptedData
         // (account, contributionScoreWeighted, totalContributionScoreWeighted) = decrypt(encryptedData)
         // require(account == signerAddr, "signer invalid");
@@ -189,5 +193,13 @@ contract LaziEngagementRewards {
         w1 = _w1;
         w2 = _w2;
         w3 = _w3;
+    }
+
+    function setRewardPeriod(uint256 period) external onlyOwner {
+        REWARD_PERIOD = period;
+    }
+
+    function setTotalRewardTokens(uint256 totalTokens) external onlyOwner {
+        TOTAL_REWARD_TOKENS = totalTokens;
     }
 }
