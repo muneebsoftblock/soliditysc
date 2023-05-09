@@ -82,10 +82,10 @@ contract StakingLazi is ERC721Holder, Ownable {
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
-    function _getMultiplier(uint256 numErc721Tokens, uint256 lockPeriod) private pure returns (uint256) {
+    function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private pure returns (uint256) {
         uint256 erc20Multiplier;
         if (lockPeriod < 90 days) {
-            erc20Multiplier = 1;
+            erc20Multiplier = 100;
         } else if (lockPeriod < 180 days) {
             erc20Multiplier = 125;
         } else if (lockPeriod < 365 days) {
@@ -98,7 +98,21 @@ contract StakingLazi is ERC721Holder, Ownable {
             erc20Multiplier = 350;
         }
 
-        uint256 erc721Multiplier = 100 + 20 * numErc721Tokens;
+        uint256 erc721Multiplier;
+        if (erc721Tokens == 0) {
+            erc721Multiplier = 100;
+        } else if (erc721Tokens == 1) {
+            erc721Multiplier = 120;
+        } else if (erc721Tokens == 2) {
+            erc721Multiplier = 140;
+        } else if (erc721Tokens == 3) {
+            erc721Multiplier = 160;
+        } else if (erc721Tokens == 4) {
+            erc721Multiplier = 180;
+        } else {
+            erc721Multiplier = 200;
+        }
+
         return (erc20Multiplier * erc721Multiplier) / 100;
     }
 
