@@ -44,24 +44,34 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
     uint256 public w2 = 25;
     uint256 public w3 = 15;
 
-    // TODO: make setters, onlyOwner
     uint256 public REWARD_PERIOD = 4 * 365 days;
     uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
+    event RewardsClaimed(address indexed user, uint256 reward);
 
     /**
     @notice Contract constructor
     @param _laziToken The LAZI token contract address
-    @param _laziUsername The ERC721 token contract address
+    @param _erc721Token The ERC721 token contract address
     */
-    constructor(address _laziToken, address _laziUsername) {
+    constructor(address _laziToken, address _erc721Token) {
         laziToken = IERC20(_laziToken);
-        erc721Token = IERC721(_laziUsername);
+        erc721Token = IERC721(_erc721Token);
     }
 
-    // TODO: add harvest function
+    function harvest(uint256 contributionScoreWeighted, uint256 totalContributionScoreWeighted) external {
+        User storage user = users[msg.sender];
+        require(user.stakedLazi > 0, "No stake to claim rewards");
+
+        uint256 reward = getUserRewards(msg.sender, contributionScoreWeighted, totalContributionScoreWeighted);
+        require(reward > 0, "No rewards to claim");
+
+        laziToken.transfer(msg.sender, reward);
+
+        emit RewardsClaimed(msg.sender, reward);
+    }
 
     /**
 
@@ -74,8 +84,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
     @param _laziUsernameIds Array of ERC721 token IDs to stake
     */
     function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external {
-        // require(unstake first to stake again);
-
+        User storage user = users[msg.sender];
+        require(user.stakedLazi == 0, "Unstake first to stake again");
         require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
         require(_laziUsernameIds.length <= maxUserMultiplierTokens, "Too many ERC721 tokens");
 
@@ -85,7 +95,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
             erc721Token.transferFrom(msg.sender, address(this), _laziUsernameIds[i]);
         }
 
-        User storage user = users[msg.sender];
         user.stakedLazi = _stakedLazi;
         user.stakeStartTime = block.timestamp;
         user.stakeDuration = _stakeDuration;
@@ -187,7 +196,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
      * @param _w2 The weight for weightedDuration
      * @param _w3 The weight for weightedStakedAmount
      */
-    function updateWeights(uint256 _w1, uint256 _w2, uint256 _w3) external {
+    function updateWeights(uint256 _w1, uint256 _w2, uint256 _w3) external onlyOwner {
         require(_w1 + _w2 + _w3 == 100, "Weights must add up to 100");
 
         w1 = _w1;
