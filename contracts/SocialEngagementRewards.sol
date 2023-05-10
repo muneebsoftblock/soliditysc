@@ -182,7 +182,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         uint256 rate = TOTAL_REWARD_TOKENS / REWARD_PERIOD;
         uint256 reward = elapsedTime * rate;
 
-        uint256 contribution = contributionScoreWeighted / totalContributionScoreWeighted;
+        uint256 contribution = contributionScoreWeighted / totalContributionScoreWeighted; // This value can come from database
         uint256 stakedDuration = user.stakeDurationWeighted / totalWeightedStakedDuration;
         uint256 stakedAmount = user.stakedLaziWeighted / totalWeightedStakedLazi;
 
