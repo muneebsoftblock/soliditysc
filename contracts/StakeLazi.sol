@@ -119,6 +119,7 @@ contract StakingLazi is ERC721Holder, Ownable {
     }
 
     function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external {
+        require(stakes[msg.sender].erc20Amount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
 
         uint256 lockPeriod = lockPeriodInDays * 1 days;
