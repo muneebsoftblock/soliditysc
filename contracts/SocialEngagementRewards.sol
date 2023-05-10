@@ -179,7 +179,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         User storage user = users[_user];
         uint256 elapsedTime = block.timestamp - user.stakeStartTime;
 
-        uint256 contributionReward = (((contributionScoreWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalWeightedStakedDuration) *
+        uint256 contributionReward = (((contributionScoreWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalContributionScoreWeighted) *
             REWARD_PERIOD) * w1;
         uint256 stakedDurationReward = (((user.stakeDurationWeighted * elapsedTime * TOTAL_REWARD_TOKENS) / totalWeightedStakedDuration) *
             REWARD_PERIOD) * w2;
