@@ -160,6 +160,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 T = (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
         uint256 U;
 
+        // TODO: soft code multiplier values
         uint erc721Tokens = user.erc721TokenIds.length;
         if (erc721Tokens == 0) {
             U = 1.00 * 1e18;
