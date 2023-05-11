@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-contract LiquidityPool is ERC721Holder, Ownable {
+contract StakeERC20 is ERC721Holder, Ownable {
     struct StakeInfo {
         uint256 stakingAmount;
         uint256 lockPeriod;
