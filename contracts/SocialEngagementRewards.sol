@@ -2,14 +2,6 @@
 
 // TODO: erc20.mint instead of transfer
 
-// TODO: verify contributionWeighted
-// address signer = ecrecover(timeContributionHash, v, r, s);
-// require(signer == trustedAddress, "Not signed by trusted address");
-// bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contribution));
-// require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
-// require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
-// processedValues[timeContributionHash] = true;
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
@@ -126,6 +118,21 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution) external nonReentrant {
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
+
+        // add to function inputs
+        // uint timestamp,
+        // bytes32 timeContributionHash,
+        // uint8 v,
+        // bytes32 r,
+        // bytes32 s
+        //
+        // add to function code
+        // address signer = ecrecover(timeContributionHash, v, r, s);
+        // require(signer == trustedAddress, "Not signed by trusted address");
+        // bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contributionWeighted,totalWeightedContribution));
+        // require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
+        // require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
+        // processedValues[timeContributionHash] = true;
 
         uint256 reward = getUserRewards(msg.sender, contributionWeighted, totalWeightedContribution);
 
