@@ -10,11 +10,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-contract StakeERC20 is ERC721Holder, Ownable {
+contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
     struct StakeInfo {
         uint256 stakingAmount;
         uint256 lockPeriod;
@@ -34,8 +36,8 @@ contract StakeERC20 is ERC721Holder, Ownable {
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
 
-    uint256 public REWARD_PERIOD = 4 * 365 days;
-    uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
+    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
+    uint256 public REWARD_PER_SEC = 135_000 ether / 1 days;
 
     constructor(IERC20 _stakingToken, IERC20 _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
@@ -43,13 +45,14 @@ contract StakeERC20 is ERC721Holder, Ownable {
         erc721 = _erc721;
     }
 
-    function unstake() external {
+    function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
         require(block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod, "Lock period not reached");
 
         uint256 rewardAmount = getUserRewards(msg.sender);
-        stakingToken.transfer(msg.sender, stakeInfo.stakingAmount + rewardAmount);
+        stakingToken.transfer(msg.sender, stakeInfo.stakingAmount);
+        rewardToken.transfer(msg.sender, rewardAmount);
 
         for (uint256 i = 0; i < stakeInfo.stakedTokenIds.length; i++) {
             erc721.safeTransferFrom(address(this), msg.sender, stakeInfo.stakedTokenIds[i]);
@@ -63,7 +66,7 @@ contract StakeERC20 is ERC721Holder, Ownable {
         delete stakes[msg.sender];
     }
 
-    function harvest() external {
+    function harvest() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         uint256 rewardAmount = getUserRewards(msg.sender);
         require(rewardAmount > 0, "No rewards to harvest");
@@ -81,8 +84,9 @@ contract StakeERC20 is ERC721Holder, Ownable {
 
     function getUserRewards(address user) public view returns (uint256) {
         StakeInfo storage stakeInfo = stakes[user];
-        uint256 elapsedTime = block.timestamp - stakeInfo.stakeStartTime;
-        uint256 rewardAmount = (stakeInfo.weightedStake * elapsedTime * TOTAL_REWARD_TOKENS) / (totalWeightedStake * REWARD_PERIOD);
+        uint checkPoint = Math.min(REWARD_STOP_TIME, block.timestamp);
+        uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
+        uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_SEC) / totalWeightedStake;
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
@@ -120,7 +124,7 @@ contract StakeERC20 is ERC721Holder, Ownable {
         return (erc20Multiplier * erc721Multiplier) / 100;
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external {
+    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
 
@@ -175,11 +179,11 @@ contract StakeERC20 is ERC721Holder, Ownable {
         }
     }
 
-    function setRewardPeriod(uint256 period) external onlyOwner {
-        REWARD_PERIOD = period;
+    function set_REWARD_PER_SEC(uint256 _REWARD_PER_SEC) external onlyOwner {
+        REWARD_PER_SEC = _REWARD_PER_SEC;
     }
 
-    function setTotalRewardTokens(uint256 totalTokens) external onlyOwner {
-        TOTAL_REWARD_TOKENS = totalTokens;
+    function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
+        REWARD_STOP_TIME = _REWARD_STOP_TIME;
     }
 }
