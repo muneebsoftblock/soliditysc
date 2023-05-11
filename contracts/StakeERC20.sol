@@ -85,6 +85,9 @@ contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
     function getUserRewards(address user) public view returns (uint256) {
         StakeInfo storage stakeInfo = stakes[user];
         uint checkPoint = Math.min(REWARD_STOP_TIME, block.timestamp);
+
+        if (checkPoint <= stakeInfo.stakeStartTime) return 0;
+
         uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
         uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_SEC) / totalWeightedStake;
         return rewardAmount - stakeInfo.claimedRewards;
