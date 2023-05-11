@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /**
@@ -15,7 +16,7 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 Users can stake their tokens for a specified duration and earn rewards based on the staked amount, duration, and the number of staked ERC721 tokens.
 */
-contract LaziEngagementRewards is Ownable, ERC721Holder {
+contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     address public trustedAddress = msg.sender;
     mapping(bytes32 => bool) public processedValues;
 
@@ -66,7 +67,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
     }
 
     // function harvest(uint256 contribution, uint timestamp, bytes32 timeContributionHash, uint8 v, bytes32 r, bytes32 s) external {
-    function harvest(uint256 contribution) external {
+    function harvest(uint256 contribution) external nonReentrant {
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to claim rewards");
 
@@ -94,7 +95,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
 
     @param _laziUsernameIds Array of ERC721 token IDs to stake
     */
-    function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external {
+    function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external nonReentrant {
         User storage user = users[msg.sender];
         require(user.stakedLazi == 0, "Unstake first to stake again");
         require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
@@ -107,8 +108,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         }
 
         user.stakedLazi = _stakedLazi;
-        user.stakeStartTime = block.timestamp;
         user.stakeDuration = _stakeDuration;
+        user.stakeStartTime = block.timestamp;
         user.erc721TokenIds = _laziUsernameIds;
 
         totalStakedLazi += _stakedLazi;
@@ -116,8 +117,10 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         totalUsers += 1;
 
         uint256 multiplier = getMultiplier(user);
-        totalWeightedStakedLazi += (_stakedLazi * multiplier) / 1e18;
-        totalWeightedStakedDuration += (_stakeDuration * multiplier) / 1e18;
+        user.stakedLaziWeighted = (_stakedLazi * multiplier) / 1e18;
+        user.stakeDurationWeighted = (_stakeDuration * multiplier) / 1e18;
+        totalWeightedStakedLazi += user.stakedLaziWeighted;
+        totalWeightedStakedDuration += user.stakeDurationWeighted;
 
         emit Staked(msg.sender, _stakedLazi, _stakeDuration, _laziUsernameIds);
     }
@@ -126,7 +129,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
      * @notice Unstake LAZI tokens and ERC721 tokens
      */
 
-    function unstake() external {
+    function unstake() external nonReentrant {
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
         require(block.timestamp >= user.stakeStartTime + user.stakeDuration * 1 days, "Stake duration not completed");
@@ -139,9 +142,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
 
         totalStakedLazi -= user.stakedLazi;
         totalStakedDuration -= user.stakeDuration;
+        totalWeightedStakedLazi -= user.stakedLaziWeighted;
+        totalWeightedStakedDuration -= user.stakeDurationWeighted;
         totalUsers -= 1;
-        emit Unstaked(msg.sender, user.stakedLazi, user.erc721TokenIds);
 
+        emit Unstaked(msg.sender, user.stakedLazi, user.erc721TokenIds);
         delete users[msg.sender];
     }
 
@@ -150,7 +155,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
      * @param user The user information
      * @return The multiplier value
      */
-    function getMultiplier(User memory user) public view returns (uint256) {
+    function getMultiplier(User memory user) internal view returns (uint256) {
         uint256 S = (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
         uint256 T = (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
         uint256 U;
@@ -186,7 +191,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         uint256 rate = TOTAL_REWARD_TOKENS / REWARD_PERIOD;
         uint256 reward = elapsedTime * rate;
 
-        // uint256 contribution = contributionScoreWeighted / totalContributionScoreWeighted; // This value can come from database
         uint256 stakedDuration = user.stakeDurationWeighted / totalWeightedStakedDuration;
         uint256 stakedAmount = user.stakedLaziWeighted / totalWeightedStakedLazi;
 
