@@ -43,12 +43,13 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
     uint256 public totalWeightedStakedLazi;
     uint256 public totalWeightedStakedDuration;
 
+    /// @notice admin can change these weights depending on the project situation
     uint256 public w1 = 60;
     uint256 public w2 = 25;
     uint256 public w3 = 15;
 
     uint256 public REWARD_PERIOD = 4 * 365 days;
-    uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * (10 ** 18);
+    uint256 public TOTAL_REWARD_TOKENS = 200_000_000 * 1e18;
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
