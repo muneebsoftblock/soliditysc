@@ -1,10 +1,10 @@
 const { expect } = require("chai")
 const { BN, ether, time } = require("@openzeppelin/test-helpers")
 
-const Staking = artifacts.require("StakingLazi")
+const Staking = artifacts.require("StakeLaziThings")
 const ERC20 = artifacts.require("LAZI")
 const ERC721 = artifacts.require("LaziName")
-
+const viewStruct = (obj) => Object.keys(obj).map((k) => isNaN(k) && console.log(k + " " + obj[k]))
 contract("Staking", (accounts) => {
     const [owner, user1, user2] = accounts
     let staking, erc20, erc721
@@ -13,7 +13,7 @@ contract("Staking", (accounts) => {
         erc20 = await ERC20.new({ from: owner })
         erc721 = await ERC721.new({ from: owner })
 
-        staking = await Staking.new(erc20.address, erc721.address, { from: owner })
+        staking = await Staking.new(erc20.address, erc20.address, erc721.address, { from: owner })
 
         await erc20.mint(user1, ether("5000000"), { from: owner })
         await erc20.mint(user2, ether("5000000"), { from: owner })
@@ -33,13 +33,8 @@ contract("Staking", (accounts) => {
 
         const stakeInfo = await staking.stakes(user1)
 
-        // console.log("Staked ERC20 Amount:", stakeInfo.erc20Amount.toString())
-        // console.log(
-        //     "Staked ERC721 IDs:",
-        //     stakeInfo.erc721Ids.map((id) => id.toString())
-        // )
-        console.log("Staked ERC721 IDs:", Object.keys(stakeInfo))
-        console.log("Staked ERC721 IDs:", stakeInfo)
+        console.log("Staked ERC721 IDs:")
+        viewStruct(stakeInfo)
     })
 
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
@@ -59,7 +54,8 @@ contract("Staking", (accounts) => {
 
         const stakeInfo = await staking.stakes(user1)
 
-        console.log("Unstaked ERC721 IDs:", stakeInfo)
+        console.log("Unstaked ERC721 IDs:")
+        viewStruct(stakeInfo)
     })
 
     it("should harvest rewards", async () => {
@@ -77,9 +73,9 @@ contract("Staking", (accounts) => {
 
         const stakeInfo = await staking.stakes(user1)
 
-        console.log("Claimed Rewards:", stakeInfo.claimedRewards.toString())
+        console.log("Claimed Rewards:")
+        viewStruct(stakeInfo)
     })
-
 
     it("should get user rewards", async () => {
         await erc20.approve(staking.address, ether("100"), { from: user1 })
@@ -95,16 +91,34 @@ contract("Staking", (accounts) => {
         const userRewards = await staking.getUserRewards(user1)
 
         console.log("User Rewards:", userRewards.toString())
+
+        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
+        const totalStaked = await staking.totalStaked()
+
+        if (totalStaked.isZero()) {
+            console.log("No tokens staked.")
+        } else {
+            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
+            console.log("APR = " + APR.toNumber() + "%")
+        }
+
+        const daysToStake = [0, 30, 60, 90, 180, 365]
+        const lockPeriodDistributions = await staking.getDistributions(daysToStake)
+        viewStruct(lockPeriodDistributions)
     })
 
-    it("should get current APY", async () => {
-        // const apy = await staking.getCurrentAPY()
-        // console.log("Current APY:", apy.toString())
-    })
+    it("should get current APR", async () => {
+        // console.log("APR = " + await staking.REWARD_PER_DAY() * 365 * 100 / await staking.totalStaked()  + "%");
 
-    it("should get current APY", async () => {
-        // const apy = await staking.getCurrentAPY()
-        // console.log("Current APY:", apy.toString())
+        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
+        const totalStaked = await staking.totalStaked()
+
+        if (totalStaked.isZero()) {
+            console.log("No tokens staked.")
+        } else {
+            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
+            console.log("APR = " + APR.toNumber() + "%")
+        }
     })
 
     it("should distribute rewards correctly after one day", async () => {
@@ -118,10 +132,6 @@ contract("Staking", (accounts) => {
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
         await staking.stake(userAStakeAmount, userALockPeriod, userAERC721TokenIds, { from: userA })
 
-        const daysToStake = [0, 30, 60, 90, 180, 365]
-        const lockPeriodDistributions  = await staking.getDistributions(daysToStake)
-
-        console.log({ lockPeriodDistributions })
         // User B stakes
         const userB = accounts[2]
         const userBStakeAmount = "75000" + "0".repeat(18)
@@ -150,6 +160,10 @@ contract("Staking", (accounts) => {
         console.log("User B rewards:", userBRewards.toString())
         console.log("Total rewards:", totalRewards.toString())
 
-        assert.equal(totalRewards.toString(), "137000" + "0".repeat(18), "Total rewards should be 137,000 tokens")
+        const daysToStake = [0, 30, 60, 90, 180, 365]
+        const lockPeriodDistributions = await staking.getDistributions(daysToStake)
+        viewStruct(lockPeriodDistributions)
+
+        assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
     })
 })

@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
+contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     struct StakeInfo {
         uint256 stakingAmount;
         uint256 lockPeriod;
@@ -37,7 +37,7 @@ contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public rewardTokensDistribution;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_SEC = 135_000 ether / 1 days;
+    uint256 public REWARD_PER_DAY = 137_000 ether;
 
     constructor(IERC20 _stakingToken, IERC20 _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
@@ -89,7 +89,7 @@ contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
         if (checkPoint <= stakeInfo.stakeStartTime) return 0;
 
         uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
-        uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_SEC) / totalWeightedStake;
+        uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_DAY) / (1 days * totalWeightedStake);
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
@@ -182,8 +182,8 @@ contract StakeERC20 is Ownable, ERC721Holder, ReentrancyGuard {
         }
     }
 
-    function set_REWARD_PER_SEC(uint256 _REWARD_PER_SEC) external onlyOwner {
-        REWARD_PER_SEC = _REWARD_PER_SEC;
+    function set_REWARD_PER_DAY(uint256 _REWARD_PER_DAY) external onlyOwner {
+        REWARD_PER_DAY = _REWARD_PER_DAY;
     }
 
     function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
