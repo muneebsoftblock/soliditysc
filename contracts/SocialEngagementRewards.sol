@@ -16,6 +16,9 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 Users can stake their tokens for a specified duration and earn rewards based on the staked amount, duration, and the number of staked ERC721 tokens.
 */
 contract LaziEngagementRewards is Ownable, ERC721Holder {
+    address public trustedAddress = msg.sender;
+    mapping(bytes32 => bool) public processedValues;
+
     IERC20 public laziToken;
     IERC721 public erc721Token;
     uint256 public maxEngagementDays = 2000;
@@ -61,15 +64,22 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         erc721Token = IERC721(_erc721Token);
     }
 
-    function harvest(uint256 contributionScoreWeighted, uint256 totalContributionScoreWeighted) external {
+    // function harvest(uint256 contribution, uint timestamp, bytes32 timeContributionHash, uint8 v, bytes32 r, bytes32 s) external {
+    function harvest(uint256 contribution) external {
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to claim rewards");
 
-        uint256 reward = getUserRewards(msg.sender, contributionScoreWeighted, totalContributionScoreWeighted);
+        // address signer = ecrecover(timeContributionHash, v, r, s);
+        // require(signer == trustedAddress, "Not signed by trusted address");
+        // bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contribution));
+        // require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
+        // require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
+        // processedValues[timeContributionHash] = true;
+
+        uint256 reward = getUserRewards(msg.sender, contribution);
         require(reward > 0, "No rewards to claim");
 
         laziToken.transfer(msg.sender, reward);
-
         emit RewardsClaimed(msg.sender, reward);
     }
 
@@ -169,9 +179,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
      */
 
     function getUserRewards(address _user, uint256 contribution) public view returns (uint256) {
-        // (account, contributionScoreWeighted, totalContributionScoreWeighted) = decrypt(encryptedData)
-        // require(account == signerAddr, "signer invalid");
-
         User storage user = users[_user];
         uint256 elapsedTime = block.timestamp - user.stakeStartTime;
 
@@ -200,11 +207,15 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         w3 = _w3;
     }
 
-    function setRewardPeriod(uint256 period) external onlyOwner {
+    function set_REWARD_PERIOD(uint256 period) external onlyOwner {
         REWARD_PERIOD = period;
     }
 
-    function setTotalRewardTokens(uint256 totalTokens) external onlyOwner {
+    function set_TOTAL_REWARD_TOKENS(uint256 totalTokens) external onlyOwner {
         TOTAL_REWARD_TOKENS = totalTokens;
+    }
+
+    function set_trustedAddress(address _trustedAddress) external onlyOwner {
+        trustedAddress = _trustedAddress;
     }
 }
