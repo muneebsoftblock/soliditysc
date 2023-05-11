@@ -168,13 +168,9 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
      * @return The reward value
      */
 
-    function getUserRewards(address _user, uint256 contributionScoreWeighted, uint256 totalContributionScoreWeighted) public view returns (uint256) {
-        // TODO:
-        // bytes calldata encryptedData
+    function getUserRewards(address _user, uint256 contribution) public view returns (uint256) {
         // (account, contributionScoreWeighted, totalContributionScoreWeighted) = decrypt(encryptedData)
         // require(account == signerAddr, "signer invalid");
-        // require(contributionScoreWeighted > 0, "Contribution score missing");
-        // ((user’s contribution score * user’s multiplier)/ total of all user’s (user’s contribution score * user’s multiplier))  *  49315
 
         User storage user = users[_user];
         uint256 elapsedTime = block.timestamp - user.stakeStartTime;
@@ -182,7 +178,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder {
         uint256 rate = TOTAL_REWARD_TOKENS / REWARD_PERIOD;
         uint256 reward = elapsedTime * rate;
 
-        uint256 contribution = contributionScoreWeighted / totalContributionScoreWeighted; // This value can come from database
+        // uint256 contribution = contributionScoreWeighted / totalContributionScoreWeighted; // This value can come from database
         uint256 stakedDuration = user.stakeDurationWeighted / totalWeightedStakedDuration;
         uint256 stakedAmount = user.stakedLaziWeighted / totalWeightedStakedLazi;
 
