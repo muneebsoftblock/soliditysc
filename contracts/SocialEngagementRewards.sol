@@ -27,7 +27,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     IERC20 public laziToken;
     IERC721 public erc721Token;
-    uint256 public maxEngagementDays = 2000;
+    uint256 public maxEngagementDays = 2000 days;
     uint256 public maxUserMultiplierTokens = 5;
 
     struct User {
@@ -178,8 +178,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @return The multiplier value
      */
     function getMultiplier(User memory user) internal view returns (uint256) {
-        uint256 S = (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
-        uint256 T = (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
+        uint256 S = totalWeightedStakedLazi == 0 ? 1e18 : (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
+        uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
         uint256 U;
 
         uint erc721Tokens = user.erc721TokenIds.length;
@@ -197,7 +197,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             U = 2.00 * 1e18;
         }
 
-        return (S * T * U) / 1e18;
+        return (S * T * U) / 1e36;
     }
 
     /**
