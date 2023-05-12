@@ -16,17 +16,12 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract LaziPost is
-    ERC721A("Lazi Post", "LP"),
-    Ownable,
-    ERC721AQueryable,
-    ERC2981
-{
+contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2981 {
     struct NftListing {
-    uint256 tokenId;
-    address seller;
-    uint256 price;
-    bool active;
+        uint256 tokenId;
+        address seller;
+        uint256 price;
+        bool active;
     }
 
     mapping(string => bool) public isMinted;
@@ -46,9 +41,9 @@ contract LaziPost is
     mapping(uint256 => NftListing) public nftListings;
     mapping(uint256 => uint256) public tokenPrice;
 
-
     // these lines are called only once when the contract is deployed
-    constructor() {
+    constructor(address _owner) {
+        _transferOwnership(_owner);
         autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
         autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
         autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
@@ -68,10 +63,7 @@ contract LaziPost is
     }
 
     // Airdrop LaziPost
-    function airdrop(
-        address[] calldata _addresses,
-        string[] calldata _laziPosts
-    ) external onlyOwner {
+    function airdrop(address[] calldata _addresses, string[] calldata _laziPosts) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziPosts.length; i++) {
             registerName(_laziPosts[i], startId + i);
@@ -81,10 +73,7 @@ contract LaziPost is
         }
     }
 
-    function airdrop(
-        address _address,
-        string[] calldata _laziPosts
-    ) external onlyOwner {
+    function airdrop(address _address, string[] calldata _laziPosts) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziPosts.length; i++) {
             registerName(_laziPosts[i], startId + i);
@@ -94,19 +83,16 @@ contract LaziPost is
     }
 
     function listNftForSale(uint256 tokenId, uint256 price) external {
-    require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
-    tokenPrice[tokenId] = price;
-    nftListings[tokenId] = NftListing(tokenId, msg.sender, price, true);
+        require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
+        tokenPrice[tokenId] = price;
+        nftListings[tokenId] = NftListing(tokenId, msg.sender, price, true);
     }
 
     function getTokenPrice(uint256 tokenId) external view returns (uint256) {
         return tokenPrice[tokenId];
     }
 
-
-    function MintLaziPost(
-        string[] calldata _laziNames
-    ) external payable saleActive(saleActiveTime) {
+    function MintLaziPost(string[] calldata _laziNames) external payable saleActive(saleActiveTime) {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -120,21 +106,12 @@ contract LaziPost is
         bytes32 _signedMessageHash,
         bytes memory _signature
     ) external payable saleActive(saleActiveTime) {
-        require(
-            msg.value == _laziPostPrice,
-            "Hey hey, send the right amount of ETH"
-        );
+        require(msg.value == _laziPostPrice, "Hey hey, send the right amount of ETH");
 
-        require(
-            _signatureUsed[_signature] == false,
-            "Signature is Already Used"
-        );
+        require(_signatureUsed[_signature] == false, "Signature is Already Used");
 
         require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(
-            _signedMessageHash,
-            _signature
-        );
+        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredMintSigner == mintSigner, "Invalid signature");
         _signatureUsed[_signature] = true;
 
@@ -144,33 +121,19 @@ contract LaziPost is
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", _message)
-            );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
     }
 
-    function getEthSignedMessageHash(
-        bytes32 _messageHash
-    ) public pure returns (bytes32) {
+    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
         /*
         Signature is produced by signing a keccak256 hash with the following format:
         "\x19Ethereum Signed Message\n" + len(msg) + msg
         */
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19Ethereum Signed Message:\n32",
-                    _messageHash
-                )
-            );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
     // verifySignature helper function
-    function verifySignature(
-        bytes32 _signedMessageHash,
-        bytes memory _signature
-    ) public pure returns (address) {
+    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature) public pure returns (address) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -199,32 +162,29 @@ contract LaziPost is
         return signer;
     }
 
-
     function buyNft(uint256 tokenId) external payable {
-    NftListing storage listing = nftListings[tokenId];
-    require(listing.active, "NFT is not listed for sale");
-    require(msg.value >= listing.price, "Insufficient payment");
+        NftListing storage listing = nftListings[tokenId];
+        require(listing.active, "NFT is not listed for sale");
+        require(msg.value >= listing.price, "Insufficient payment");
 
-    address seller = listing.seller;
-    address buyer = msg.sender;
-    uint256 price = listing.price;
+        address seller = listing.seller;
+        address buyer = msg.sender;
+        uint256 price = listing.price;
 
-    // Transfer the NFT from the seller to the buyer
-    // _transfer(seller, buyer, tokenId);
-    safeTransferFrom(seller, buyer, tokenId);
+        // Transfer the NFT from the seller to the buyer
+        // _transfer(seller, buyer, tokenId);
+        safeTransferFrom(seller, buyer, tokenId);
 
-    // Transfer the payment to the seller
-    Address.sendValue(payable(seller), price);
+        // Transfer the payment to the seller
+        Address.sendValue(payable(seller), price);
 
-    // Deactivate the listing
-    delete nftListings[tokenId];
-}
+        // Deactivate the listing
+        delete nftListings[tokenId];
+    }
 
     // onlyOwner functions
     function withdraw() external onlyOwner {
-        (bool success, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success);
     }
 
@@ -236,16 +196,11 @@ contract LaziPost is
         saleActiveTime = _saleActiveTime;
     }
 
-    function set_laziPostImages(
-        string calldata _laziPostImages
-    ) external onlyOwner {
+    function set_laziPostImages(string calldata _laziPostImages) external onlyOwner {
         laziPostImages = _laziPostImages;
     }
 
-    function set_royalty(
-        address _receiver,
-        uint96 _feeNumerator
-    ) external onlyOwner {
+    function set_royalty(address _receiver, uint96 _feeNumerator) external onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
@@ -264,9 +219,7 @@ contract LaziPost is
         return 1;
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -274,10 +227,7 @@ contract LaziPost is
         allowed[_spender] = !allowed[_spender];
     }
 
-    function isApprovedForAll(
-        address _owner,
-        address _operator
-    ) public view override(ERC721A, IERC721) returns (bool) {
+    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
