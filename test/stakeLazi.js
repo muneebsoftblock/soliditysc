@@ -25,16 +25,30 @@ contract("Staking", (accounts) => {
 
     it("should stake ERC20 tokens and ERC721 tokens", async () => {
         await erc20.approve(staking.address, ether("100"), { from: user1 })
+        await erc20.approve(staking.address, ether("100"), { from: user2 })
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        await erc721.setApprovalForAll(staking.address, true, { from: user2 })
 
         await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        await time.increase(time.duration.hours(1))
+        await staking.stake(ether("100"), 30, [4, 5, 6], { from: user2 })
+        await time.increase(time.duration.hours(2))
 
-        const stakeInfo = await staking.stakes(user1)
+        const user1Rewards = await staking.getUserRewards(user1)
+        const user2Rewards = await staking.getUserRewards(user2)
+        console.log("User 1 rewards:", user1Rewards.toString())
+        console.log("User 2 rewards:", user2Rewards.toString())
 
-        console.log("Staked ERC721 IDs:")
-        viewStruct(stakeInfo)
+        const stakeInfo1 = await staking.stakes(user1)
+        const stakeInfo2 = await staking.stakes(user1)
+
+        console.log("Staked ERC721 IDs 1:")
+        viewStruct(stakeInfo1)
+
+        console.log("Staked ERC721 IDs 2:")
+        viewStruct(stakeInfo2)
     })
 
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions

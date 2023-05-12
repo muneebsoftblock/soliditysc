@@ -56,6 +56,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
+    uint256 public PENALTY_POOL;
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
@@ -154,7 +155,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         laziToken.transfer(msg.sender, user.stakedLazi - stakedPenalty + reward - rewardPenalty);
         if (completedDurationPercentage < 100) {
             laziToken.transfer(owner(), (stakedPenalty / 2) + (rewardPenalty / 2));
-            REWARD_PER_DAY += (stakedPenalty / 2) + (rewardPenalty / 2);
+            PENALTY_POOL += (stakedPenalty / 2) + (rewardPenalty / 2);
         }
 
         for (uint256 i = 0; i < user.erc721TokenIds.length; i++) {
