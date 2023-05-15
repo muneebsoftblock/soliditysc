@@ -104,7 +104,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     // mint rewardToken to the recipient address
     function _mintRewardTokens(address recipient, uint256 amount) private {
-        rewardToken._mint(recipient, amount);
+        rewardToken.mint(recipient, amount);
     }
 
     function unstake() external nonReentrant {
