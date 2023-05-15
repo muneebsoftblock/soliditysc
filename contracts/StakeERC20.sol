@@ -9,6 +9,8 @@
 
 pragma solidity ^0.8.0;
 
+import './LaziToken.sol';
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -27,7 +29,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     }
 
     IERC20 public stakingToken;
-    IERC20 public rewardToken;
+    LAZI public rewardToken;
     IERC721 public erc721;
     uint256 public totalStaked;
     uint256 public totalWeightedStake;
@@ -43,28 +45,34 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     uint256[] public lockPeriods;
     uint256[] public erc721Multipliers;
 
-    constructor(IERC20 _stakingToken, IERC20 _rewardToken, IERC721 _erc721,uint256[] memory lockPeriodsInput, uint256[] memory erc721MultipliersInput) {
+    constructor(
+        IERC20 _stakingToken,
+        IERC20 _rewardToken,
+        IERC721 _erc721,
+        uint256[] memory lockPeriodsInput,
+        uint256[] memory erc721MultipliersInput
+    ) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
         erc721 = _erc721;
         //passing values to the constructor
         initializeLockPeriods(lockPeriodsInput);
         initializeERC721Multipliers(erc721MultipliersInput);
-
-
     }
+
     //initilize lock periods
     function initializeLockPeriods(uint256[] memory periods) private {
         require(periods.length > 0, "At least one lock period must be provided");
         lockPeriods = periods;
     }
-// initilize the ERC721 multiplier
+
+    // initilize the ERC721 multiplier
     function initializeERC721Multipliers(uint256[] memory multipliers) private {
         require(multipliers.length > 0, "At least one ERC721 multiplier must be provided");
         erc721Multipliers = multipliers;
     }
 
-// getting index
+    // getting index
     function getLockPeriodIndex(uint256 lockPeriod) private view returns (uint256) {
         // Find the index of the lock period in the lock periods array
         for (uint256 i = 0; i < lockPeriods.length; i++) {
@@ -75,7 +83,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return lockPeriods.length - 1;
     }
 
-//erc721 multiplier
+    //erc721 multiplier
     function getERC721Multiplier(uint256 erc721Tokens) private view returns (uint256) {
         // Get the ERC721 multiplier based on the number of staked ERC721 tokens
         if (erc721Tokens >= erc721Multipliers.length) {
@@ -83,7 +91,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         }
         return erc721Multipliers[erc721Tokens];
     }
-//get multiplier
+
+    //get multiplier
     function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
         uint256 lockPeriodIndex = getLockPeriodIndex(lockPeriod);
         uint256 lockPeriodMultiplier = lockPeriodIndex + 1;
@@ -93,6 +102,11 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return lockPeriodMultiplier * erc721Multiplier;
     }
 
+    // mint rewardToken to the recipient address
+    function _mintRewardTokens(address recipient, uint256 amount) private {
+        rewardToken._mint(recipient, amount);
+    }
+
     function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
@@ -100,7 +114,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         uint256 rewardAmount = getUserRewards(msg.sender);
         stakingToken.transfer(msg.sender, stakeInfo.stakingAmount);
-        rewardToken.transfer(msg.sender, rewardAmount);
+        _mintRewardTokens(msg.sender, rewardAmount);
 
         for (uint256 i = 0; i < stakeInfo.stakedTokenIds.length; i++) {
             erc721.safeTransferFrom(address(this), msg.sender, stakeInfo.stakedTokenIds[i]);
@@ -119,7 +133,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 rewardAmount = getUserRewards(msg.sender);
         require(rewardAmount > 0, "No rewards to harvest");
 
-        rewardToken.transfer(msg.sender, rewardAmount);
+        _mintRewardTokens(msg.sender, rewardAmount);
         stakeInfo.claimedRewards += rewardAmount;
         updateDistributions(0, 0, rewardAmount);
     }
