@@ -42,8 +42,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
     mapping(uint256 => uint256) public tokenPrice;
 
     // these lines are called only once when the contract is deployed
-    constructor(address _owner) {
-        _transferOwnership(_owner);
+    constructor() {
         autoApproveMarketplace(0xF849de01B080aDC3A814FaBE1E2087475cF2E354); // X2y2
         autoApproveMarketplace(0x4feE7B061C97C9c496b01DbcE9CDb10c02f0a0Be); // Rarible
         autoApproveMarketplace(0x1E0049783F008A0085193E00003D00cd54003c71); // OpenSea
