@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.0;
 
-import './LaziToken.sol';
+import "./LaziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -47,7 +47,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     constructor(
         IERC20 _stakingToken,
-        IERC20 _rewardToken,
+        LAZI _rewardToken,
         IERC721 _erc721,
         uint256[] memory lockPeriodsInput,
         uint256[] memory erc721MultipliersInput
