@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./LaziToken.sol";
+import "./laziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -40,8 +40,6 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
-
-    //lock period values can be configured
     uint256[] public lockPeriods;
     uint256[] public erc721Multipliers;
 
@@ -55,35 +53,20 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
         erc721 = _erc721;
-        //passing values to the constructor
-        initializeLockPeriods(lockPeriodsInput);
-        initializeERC721Multipliers(erc721MultipliersInput);
+        setLockPeriods(lockPeriodsInput);
+        setERC721Multipliers(erc721MultipliersInput);
     }
 
-    //initilize lock periods
-    function initializeLockPeriods(uint256[] memory periods) private {
+    function setLockPeriods(uint256[] memory periods) public onlyOwner {
         require(periods.length > 0, "At least one lock period must be provided");
         lockPeriods = periods;
     }
 
-    // initilize the ERC721 multiplier
-    function initializeERC721Multipliers(uint256[] memory multipliers) private {
+    function setERC721Multipliers(uint256[] memory multipliers) public onlyOwner {
         require(multipliers.length > 0, "At least one ERC721 multiplier must be provided");
         erc721Multipliers = multipliers;
     }
 
-    // getting index
-    function getLockPeriodIndex(uint256 lockPeriod) private view returns (uint256) {
-        // Find the index of the lock period in the lock periods array
-        for (uint256 i = 0; i < lockPeriods.length; i++) {
-            if (lockPeriod <= lockPeriods[i]) {
-                return i;
-            }
-        }
-        return lockPeriods.length - 1;
-    }
-
-    //erc721 multiplier
     function getERC721Multiplier(uint256 erc721Tokens) private view returns (uint256) {
         // Get the ERC721 multiplier based on the number of staked ERC721 tokens
         if (erc721Tokens >= erc721Multipliers.length) {
@@ -92,9 +75,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return erc721Multipliers[erc721Tokens];
     }
 
-    //get multiplier
-    function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
-        uint256 lockPeriodIndex = getLockPeriodIndex(lockPeriod);
+    function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriodIndex) private view returns (uint256) {
         uint256 lockPeriodMultiplier = lockPeriodIndex + 1;
 
         uint256 erc721Multiplier = getERC721Multiplier(erc721Tokens);
@@ -102,7 +83,6 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return lockPeriodMultiplier * erc721Multiplier;
     }
 
-    // mint rewardToken to the recipient address
     function _mintRewardTokens(address recipient, uint256 amount) private {
         rewardToken.mint(recipient, amount);
     }
@@ -155,47 +135,13 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
-    // function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private pure returns (uint256) {
-    //     uint256 erc20Multiplier;
-    //     if (lockPeriod < 90 days) {
-    //         erc20Multiplier = 100;
-    //     } else if (lockPeriod < 180 days) {
-    //         erc20Multiplier = 125;
-    //     } else if (lockPeriod < 365 days) {
-    //         erc20Multiplier = 150;
-    //     } else if (lockPeriod < 545 days) {
-    //         erc20Multiplier = 200;
-    //     } else if (lockPeriod < 730 days) {
-    //         erc20Multiplier = 275;
-    //     } else {
-    //         erc20Multiplier = 350;
-    //     }
-
-    //     uint256 erc721Multiplier;
-    //     if (erc721Tokens == 0) {
-    //         erc721Multiplier = 100;
-    //     } else if (erc721Tokens == 1) {
-    //         erc721Multiplier = 120;
-    //     } else if (erc721Tokens == 2) {
-    //         erc721Multiplier = 140;
-    //     } else if (erc721Tokens == 3) {
-    //         erc721Multiplier = 160;
-    //     } else if (erc721Tokens == 4) {
-    //         erc721Multiplier = 180;
-    //     } else {
-    //         erc721Multiplier = 200;
-    //     }
-
-    //     return (erc20Multiplier * erc721Multiplier) / 100;
-    // }
-
-    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external nonReentrant {
+    function stake(uint256 erc20Amount, uint256 lockPeriodIndex, uint256[] calldata erc721TokenIds) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
 
-        uint256 lockPeriod = lockPeriodInDays * 1 days;
+        // uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
-        uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriod);
+        uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriodIndex);
         uint256 weightedStake = (erc20Amount * multiplier) / 100;
 
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
