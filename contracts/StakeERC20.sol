@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./laziToken.sol";
+import "./LaziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";

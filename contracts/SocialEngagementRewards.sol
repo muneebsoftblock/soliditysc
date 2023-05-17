@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
+import "./LaziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -25,7 +26,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     address public trustedAddress = msg.sender;
     mapping(bytes32 => bool) public processedValues;
 
-    IERC20 public laziToken;
+    LAZI public laziToken;
     IERC721 public erc721Token;
     uint256 public maxEngagementDays = 2000 days;
     uint256 public maxUserMultiplierTokens = 5;
@@ -57,6 +58,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public PENALTY_POOL;
+    uint256[] public multiplierValues;
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
@@ -68,8 +70,10 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     @param _erc721Token The ERC721 token contract address
     */
     constructor(address _laziToken, address _erc721Token) {
-        laziToken = IERC20(_laziToken);
+        laziToken = LAZI(_laziToken);
         erc721Token = IERC721(_erc721Token);
+        multiplierValues = new uint256[](6);
+        initializeMultiplierValues();
     }
 
     /**
@@ -120,21 +124,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
 
-        // add to function inputs
-        // uint timestamp,
-        // bytes32 timeContributionHash,
-        // uint8 v,
-        // bytes32 r,
-        // bytes32 s
-        //
-        // add to function code
-        // address signer = ecrecover(timeContributionHash, v, r, s);
-        // require(signer == trustedAddress, "Not signed by trusted address");
-        // bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contributionWeighted,totalWeightedContribution));
-        // require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
-        // require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
-        // processedValues[timeContributionHash] = true;
-
         uint256 reward = getUserRewards(msg.sender, contributionWeighted, totalWeightedContribution);
 
         uint256 completedDurationPercentage = ((block.timestamp - user.stakeStartTime) * 100) / user.stakeDuration;
@@ -152,9 +141,9 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             rewardPenalty = (reward * 15) / 100;
         }
 
-        laziToken.transfer(msg.sender, user.stakedLazi - stakedPenalty + reward - rewardPenalty);
+        laziToken.mint(msg.sender, user.stakedLazi - stakedPenalty + reward - rewardPenalty);
         if (completedDurationPercentage < 100) {
-            laziToken.transfer(owner(), (stakedPenalty / 2) + (rewardPenalty / 2));
+            laziToken.mint(owner(), (stakedPenalty / 2) + (rewardPenalty / 2));
             PENALTY_POOL += (stakedPenalty / 2) + (rewardPenalty / 2);
         }
 
@@ -183,22 +172,51 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
         uint256 U;
 
-        uint erc721Tokens = user.erc721TokenIds.length;
+        uint256 erc721Tokens = user.erc721TokenIds.length;
         if (erc721Tokens == 0) {
-            U = 1.00 * 1e18;
-        } else if (erc721Tokens == 1) {
-            U = 1.20 * 1e18;
-        } else if (erc721Tokens == 2) {
-            U = 1.40 * 1e18;
-        } else if (erc721Tokens == 3) {
-            U = 1.60 * 1e18;
-        } else if (erc721Tokens == 4) {
-            U = 1.80 * 1e18;
+            U = getMultiplierValue(0);
         } else {
-            U = 2.00 * 1e18;
+            // Limit the index based on the number of multiplier values available
+            uint256 index = Math.min(erc721Tokens, multiplierValues.length) - 1;
+            U = getMultiplierValue(index);
         }
 
         return (S * T * U) / 1e36;
+    }
+
+    /**
+     * @notice Initialize the multiplier values
+     */
+    function initializeMultiplierValues() internal onlyOwner {
+        multiplierValues[0] = 1.00 * 1e18;
+        multiplierValues[1] = 1.20 * 1e18;
+        multiplierValues[2] = 1.40 * 1e18;
+        multiplierValues[3] = 1.60 * 1e18;
+        multiplierValues[4] = 1.80 * 1e18;
+        multiplierValues[5] = 2.00 * 1e18;
+    }
+
+    /**
+     * @notice Update the multiplier values
+     * @param _multiplierValues An array of multiplier values
+     */
+    function updateMultiplierValues(uint256[] calldata _multiplierValues) external onlyOwner {
+        require(_multiplierValues.length == 6, "Invalid number of multiplier values");
+
+        for (uint256 i = 0; i < _multiplierValues.length; i++) {
+            multiplierValues[i] = _multiplierValues[i];
+        }
+    }
+
+    /**
+     * @notice Get a multiplier value at a specific index
+     * @param index The index of the multiplier value to retrieve
+     * @return The multiplier value
+     */
+    function getMultiplierValue(uint256 index) internal view returns (uint256) {
+        require(index < multiplierValues.length, "Invalid index");
+
+        return multiplierValues[index];
     }
 
     /**
