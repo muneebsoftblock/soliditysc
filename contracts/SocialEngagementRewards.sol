@@ -121,6 +121,22 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution) external nonReentrant {
+        
+        // add to function inputs
+        // uint timestamp,
+        // bytes32 timeContributionHash,
+        // uint8 v,
+        // bytes32 r,
+        // bytes32 s
+        //
+        // add to function code
+        // address signer = ecrecover(timeContributionHash, v, r, s);
+        // require(signer == trustedAddress, "Not signed by trusted address");
+        // bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contributionWeighted,totalWeightedContribution));
+        // require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
+        // require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
+        // processedValues[timeContributionHash] = true;
+
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
 
