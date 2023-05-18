@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+/**
+ * @title StakingLazi
+ * @notice A staking contract that allows users to stake ERC20 tokens along with ERC721 tokens to earn rewards.
+ * Users can stake their tokens for a specified lock period and earn rewards based on the staked amount and the number of staked ERC721 tokens.
+ * The contract also provides functions to unstake tokens, harvest rewards, and view distributions for different lock periods.
+ */
 
 pragma solidity ^0.8.0;
 
@@ -129,14 +135,14 @@ contract LaziLpRewards is Ownable, ERC721Holder, ReentrancyGuard {
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodIndex, uint256[] calldata erc721TokenIds) external nonReentrant {
+    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256 lockPeriodIndex, uint256[] calldata erc721TokenIds) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
 
-        // uint256 lockPeriod = lockPeriodInDays * 1 days;
+        uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
         uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriodIndex);
-        uint256 weightedStake = (erc20Amount * multiplier) / 100;
+        uint256 weightedStake = (erc20Amount * multiplier);
 
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
 

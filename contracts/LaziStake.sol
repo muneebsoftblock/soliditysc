@@ -135,14 +135,14 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodIndex, uint256[] calldata erc721TokenIds) external nonReentrant {
+    function stake(uint256 erc20Amount, uint256 lockPeriodInDays,uint256 lockPeriodIndex, uint256[] calldata erc721TokenIds) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
 
-        // uint256 lockPeriod = lockPeriodInDays * 1 days;
+        uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
         uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriodIndex);
-        uint256 weightedStake = (erc20Amount * multiplier) / 100;
+        uint256 weightedStake = (erc20Amount * multiplier);
 
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
 

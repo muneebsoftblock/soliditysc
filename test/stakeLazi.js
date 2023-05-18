@@ -4,7 +4,9 @@ const { BN, ether, time } = require("@openzeppelin/test-helpers")
 const Staking = artifacts.require("StakeLaziThings")
 const ERC20 = artifacts.require("LAZI")
 const ERC721 = artifacts.require("LaziName")
-const viewStruct = (obj) => Object.keys(obj).map((k) => isNaN(k) && console.log(k + " " + obj[k]))
+
+const viewStruct = (obj) => Object.keys(obj).forEach((k) => isNaN(k) && console.log(k + " " + obj[k]))
+
 contract("Staking", (accounts) => {
     const [owner, user1, user2] = accounts
     let staking, erc20, erc721
@@ -12,8 +14,13 @@ contract("Staking", (accounts) => {
     beforeEach(async () => {
         erc20 = await ERC20.new({ from: owner })
         erc721 = await ERC721.new({ from: owner })
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const erc721MultipliersInput = [1.25, 1.5, 1.75, 2]
 
-        staking = await Staking.new(erc20.address, erc20.address, erc721.address, { from: owner })
+        staking = await Staking.new(erc20.address, erc20.address, erc721.address, lockPeriodsInput, erc721MultipliersInput, { from: owner })
+        await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
+
+        // caluclate index function
 
         await erc20.mint(user1, ether("5000000"), { from: owner })
         await erc20.mint(user2, ether("5000000"), { from: owner })
@@ -30,10 +37,12 @@ contract("Staking", (accounts) => {
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
         await erc721.setApprovalForAll(staking.address, true, { from: user2 })
-
-        await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const lockPeriodInDays = 30
+        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
+        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
         await time.increase(time.duration.hours(1))
-        await staking.stake(ether("100"), 30, [4, 5, 6], { from: user2 })
+        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, [4, 5, 6], { from: user2 })
         await time.increase(time.duration.hours(2))
 
         const user1Rewards = await staking.getUserRewards(user1)
@@ -42,7 +51,7 @@ contract("Staking", (accounts) => {
         console.log("User 2 rewards:", user2Rewards.toString())
 
         const stakeInfo1 = await staking.stakes(user1)
-        const stakeInfo2 = await staking.stakes(user1)
+        const stakeInfo2 = await staking.stakes(user2)
 
         console.log("Staked ERC721 IDs 1:")
         viewStruct(stakeInfo1)
@@ -51,15 +60,16 @@ contract("Staking", (accounts) => {
         viewStruct(stakeInfo2)
     })
 
-    // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
-
     it("should unstake ERC20 tokens and ERC721 tokens", async () => {
         await erc20.approve(staking.address, ether("100"), { from: user1 })
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const lockPeriodInDays = 30
+        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
 
-        await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -77,8 +87,11 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const lockPeriodInDays = 30
+        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
 
-        await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -96,8 +109,11 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const lockPeriodInDays = 30
+        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
 
-        await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -142,9 +158,14 @@ contract("Staking", (accounts) => {
         const userALockPeriod = 365 * 24 * 60 * 60
         const userAERC721TokenIds = [1, 2, 3]
 
+        const lockPeriodsInput = [30, 60, 90, 180]
+        const lockPeriodInDays = 30
+        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
+
         await erc20.approve(staking.address, userAStakeAmount, { from: userA })
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
-        await staking.stake(userAStakeAmount, userALockPeriod, userAERC721TokenIds, { from: userA })
+
+        await staking.stake(userAStakeAmount, lockPeriodInDays, lockPeriodIndex, userAERC721TokenIds, { from: userA })
 
         // User B stakes
         const userB = accounts[2]
@@ -154,12 +175,10 @@ contract("Staking", (accounts) => {
 
         await erc20.approve(staking.address, userBStakeAmount, { from: userB })
         await erc721.setApprovalForAll(staking.address, true, { from: userB })
-        await staking.stake(userBStakeAmount, userBLockPeriod, userBERC721TokenIds, { from: userB })
+        await staking.stake(userBStakeAmount, lockPeriodInDays, lockPeriodIndex, userBERC721TokenIds, { from: userB })
 
         // Advance time by 1 day
         await time.increase(time.duration.days(1))
-        // await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_increaseTime", params: [24 * 60 * 60], id: 0 }, () => {})
-        // await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_mine", id: 0 }, () => {})
 
         // Harvest rewards
         // await staking.harvest({ from: userA })
@@ -177,7 +196,7 @@ contract("Staking", (accounts) => {
         const daysToStake = [0, 30, 60, 90, 180, 365]
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
-
+        console.log("total reward! ", totalRewards.toString())
         assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
     })
 })

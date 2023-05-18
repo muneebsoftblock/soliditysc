@@ -1,6 +1,5 @@
-// TODO: soft code multiplier values
-
-// TODO: erc20.mint instead of transfer
+//Todo signer verify on contribution score 
+//Backend API 
 
 // SPDX-License-Identifier: MIT
 
@@ -121,7 +120,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution) external nonReentrant {
-        
+
         // add to function inputs
         // uint timestamp,
         // bytes32 timeContributionHash,
