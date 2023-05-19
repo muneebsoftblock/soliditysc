@@ -1,5 +1,6 @@
-//Todo signer verify on contribution score 
-//Backend API 
+//Todo signer verify on contribution score
+//Backend API
+// penalty softcode
 
 // SPDX-License-Identifier: MIT
 
@@ -120,7 +121,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution) external nonReentrant {
-
         // add to function inputs
         // uint timestamp,
         // bytes32 timeContributionHash,
@@ -255,6 +255,12 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
         uint totalReward = rewardContribution + rewardStakedDuration + rewardStakedAmount;
         return totalReward;
+    }
+
+    function withdrawERC20(address _erc20) external onlyOwner {
+        LAZI token = LAZI(_erc20);
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(owner(), balance);
     }
 
     /**

@@ -11,6 +11,8 @@ contract LAZI is ERC20, Pausable, AccessControl {
 
     uint256 public price = 0.00001 ether;
     uint256 public maxSupply = 50_000_000_000 * 1e18;
+    mapping(address => uint256) private _lastTransferBlock;
+
 
     constructor() ERC20("LAZI", "LAZI") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -31,6 +33,12 @@ contract LAZI is ERC20, Pausable, AccessControl {
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
+        require(_lastTransferBlock[from] != block.number, "Repeat transaction in the same block");
+        require(_lastTransferBlock[to] != block.number, "Repeat transaction in the same block");
+
+        _lastTransferBlock[from] = block.number;
+        _lastTransferBlock[to] = block.number;
+
         super._beforeTokenTransfer(from, to, amount);
     }
 

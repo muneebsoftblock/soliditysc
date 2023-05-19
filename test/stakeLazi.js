@@ -14,10 +14,13 @@ contract("Staking", (accounts) => {
     beforeEach(async () => {
         erc20 = await ERC20.new({ from: owner })
         erc721 = await ERC721.new({ from: owner })
-        const lockPeriodsInput = [30, 60, 90, 180]
-        const erc721MultipliersInput = [1.25, 1.5, 1.75, 2]
+        const lockPeriodsInput = [0, 30, 60, 90, 180]
+        const erc721MultipliersInput = [100, 125, 150, 175, 200]
+        const lockPeriodMultipliers = [100, 125, 150, 175, 200]
 
-        staking = await Staking.new(erc20.address, erc20.address, erc721.address, lockPeriodsInput, erc721MultipliersInput, { from: owner })
+        staking = await Staking.new(erc20.address, erc20.address, erc721.address, lockPeriodsInput, lockPeriodMultipliers, erc721MultipliersInput, {
+            from: owner,
+        })
         await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
 
         // caluclate index function
@@ -37,12 +40,10 @@ contract("Staking", (accounts) => {
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
         await erc721.setApprovalForAll(staking.address, true, { from: user2 })
-        const lockPeriodsInput = [30, 60, 90, 180]
         const lockPeriodInDays = 30
-        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
-        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
         await time.increase(time.duration.hours(1))
-        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, [4, 5, 6], { from: user2 })
+        await staking.stake(ether("100"), lockPeriodInDays, [4, 5, 6], { from: user2 })
         await time.increase(time.duration.hours(2))
 
         const user1Rewards = await staking.getUserRewards(user1)
@@ -65,11 +66,9 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodsInput = [30, 60, 90, 180]
         const lockPeriodInDays = 30
-        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
 
-        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -87,11 +86,9 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodsInput = [30, 60, 90, 180]
         const lockPeriodInDays = 30
-        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
 
-        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -109,11 +106,8 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodsInput = [30, 60, 90, 180]
         const lockPeriodInDays = 30
-        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
-
-        await staking.stake(ether("100"), lockPeriodInDays, lockPeriodIndex, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
         await time.increase(time.duration.days(30))
@@ -157,15 +151,11 @@ contract("Staking", (accounts) => {
         const userAStakeAmount = "25000" + "0".repeat(18)
         const userALockPeriod = 365 * 24 * 60 * 60
         const userAERC721TokenIds = [1, 2, 3]
-
-        const lockPeriodsInput = [30, 60, 90, 180]
         const lockPeriodInDays = 30
-        const lockPeriodIndex = lockPeriodsInput.indexOf(lockPeriodInDays)
-
         await erc20.approve(staking.address, userAStakeAmount, { from: userA })
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
 
-        await staking.stake(userAStakeAmount, lockPeriodInDays, lockPeriodIndex, userAERC721TokenIds, { from: userA })
+        await staking.stake(userAStakeAmount, lockPeriodInDays, userAERC721TokenIds, { from: userA })
 
         // User B stakes
         const userB = accounts[2]
@@ -175,7 +165,7 @@ contract("Staking", (accounts) => {
 
         await erc20.approve(staking.address, userBStakeAmount, { from: userB })
         await erc721.setApprovalForAll(staking.address, true, { from: userB })
-        await staking.stake(userBStakeAmount, lockPeriodInDays, lockPeriodIndex, userBERC721TokenIds, { from: userB })
+        await staking.stake(userBStakeAmount, lockPeriodInDays, userBERC721TokenIds, { from: userB })
 
         // Advance time by 1 day
         await time.increase(time.duration.days(1))

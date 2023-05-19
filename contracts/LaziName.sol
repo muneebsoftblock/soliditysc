@@ -16,12 +16,7 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract LaziName is
-    ERC721A("Lazi Name Service", "LNS"),
-    Ownable,
-    ERC721AQueryable,
-    ERC2981
-{
+contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQueryable, ERC2981 {
     mapping(string => bool) public isMinted;
     mapping(uint256 => string) public domainNameOf;
     mapping(bytes => bool) public _signatureUsed;
@@ -35,6 +30,7 @@ contract LaziName is
 
     // LaziName Auto Approves Marketplaces
     mapping(address => bool) private allowed;
+    mapping(address => uint256) private _lastTransferBlock;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -56,10 +52,7 @@ contract LaziName is
     }
 
     // Airdrop LaziName
-    function airdrop(
-        address[] calldata _addresses,
-        string[] calldata _laziNames
-    ) external onlyOwner {
+    function airdrop(address[] calldata _addresses, string[] calldata _laziNames) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -69,10 +62,7 @@ contract LaziName is
         }
     }
 
-    function airdrop(
-        address _address,
-        string[] calldata _laziNames
-    ) external onlyOwner {
+    function airdrop(address _address, string[] calldata _laziNames) external onlyOwner {
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -81,9 +71,9 @@ contract LaziName is
         _safeMint(_address, _laziNames.length);
     }
 
-    function buyLaziNames(
-        string[] calldata _laziNames
-    ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+    function buyLaziNames(string[] calldata _laziNames) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
+        _lastTransferBlock[msg.sender] = block.number;
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -97,16 +87,12 @@ contract LaziName is
         bytes32 _signedMessageHash,
         bytes memory _signature
     ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
-        require(
-            _signatureUsed[_signature] == false,
-            "Signature is Already Used"
-        );
+        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
+        _lastTransferBlock[msg.sender] = block.number;
+        require(_signatureUsed[_signature] == false, "Signature is Already Used");
 
         require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(
-            _signedMessageHash,
-            _signature
-        );
+        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredMintSigner == mintSigner, "Invalid signature");
         _signatureUsed[_signature] = true;
 
@@ -119,33 +105,19 @@ contract LaziName is
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", _message)
-            );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
     }
 
-    function getEthSignedMessageHash(
-        bytes32 _messageHash
-    ) public pure returns (bytes32) {
+    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
         /*
         Signature is produced by signing a keccak256 hash with the following format:
         "\x19Ethereum Signed Message\n" + len(msg) + msg
         */
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19Ethereum Signed Message:\n32",
-                    _messageHash
-                )
-            );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
     // verifySignature helper function
-    function verifySignature(
-        bytes32 _signedMessageHash,
-        bytes memory _signature
-    ) public pure returns (address) {
+    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature) public pure returns (address) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -176,9 +148,7 @@ contract LaziName is
 
     // onlyOwner functions
     function withdraw() external onlyOwner {
-        (bool success, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success);
     }
 
@@ -190,16 +160,11 @@ contract LaziName is
         saleActiveTime = _saleActiveTime;
     }
 
-    function set_laziNameImages(
-        string calldata _laziNameImages
-    ) external onlyOwner {
+    function set_laziNameImages(string calldata _laziNameImages) external onlyOwner {
         laziNameImages = _laziNameImages;
     }
 
-    function set_royalty(
-        address _receiver,
-        uint96 _feeNumerator
-    ) external onlyOwner {
+    function set_royalty(address _receiver, uint96 _feeNumerator) external onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 
@@ -215,10 +180,7 @@ contract LaziName is
     }
 
     modifier pricePaid(uint256 _qty) {
-        require(
-            msg.value == getPrice(_qty),
-            "Hey hey, send the right amount of ETH"
-        );
+        require(msg.value == getPrice(_qty), "Hey hey, send the right amount of ETH");
         _;
     }
 
@@ -231,9 +193,7 @@ contract LaziName is
         return 1;
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -241,10 +201,7 @@ contract LaziName is
         allowed[_spender] = !allowed[_spender];
     }
 
-    function isApprovedForAll(
-        address _owner,
-        address _operator
-    ) public view override(ERC721A, IERC721) returns (bool) {
+    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }

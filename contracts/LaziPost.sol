@@ -40,6 +40,8 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
 
     mapping(uint256 => NftListing) public nftListings;
     mapping(uint256 => uint256) public tokenPrice;
+    // Store last transfer block for each address
+    mapping(address => uint256) private _lastTransferBlock;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -92,6 +94,8 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
     }
 
     function MintLaziPost(string[] calldata _laziNames) external payable saleActive(saleActiveTime) {
+        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
+        _lastTransferBlock[msg.sender] = block.number;
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -99,12 +103,37 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         _safeMint(msg.sender, _laziNames.length);
     }
 
+    function MintLaziPostSigned(
+        string[] calldata _laziNames,
+        uint256 _laziPostPrice,
+        bytes32 _signedMessageHash,
+        bytes memory _signature
+    ) external payable saleActive(saleActiveTime) {
+        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
+        require(msg.value == _laziPostPrice, "Hey hey, send the right amount of ETH");
+        require(_signatureUsed[_signature] == false, "Signature is Already Used");
+        require(_signature.length == 65, "Invalid signature length");
+        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
+        require(recoveredMintSigner == mintSigner, "Invalid signature");
+        _signatureUsed[_signature] = true;
+        _lastTransferBlock[msg.sender] = block.number;
+        _lastTransferBlock[msg.sender] = block.number;
+        uint256 startId = totalSupply() + _startTokenId();
+        for (uint256 i = 0; i < _laziNames.length; i++) {
+            registerName(_laziNames[i], startId + i);
+        }
+        _safeMint(msg.sender, _laziNames.length);
+    }
+
+    // This function will be removed
     function buyLaziPostsSigned(
         string calldata _laziPost,
         uint256 _laziPostPrice,
         bytes32 _signedMessageHash,
         bytes memory _signature
     ) external payable saleActive(saleActiveTime) {
+        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
+
         require(msg.value == _laziPostPrice, "Hey hey, send the right amount of ETH");
 
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
@@ -113,10 +142,21 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredMintSigner == mintSigner, "Invalid signature");
         _signatureUsed[_signature] = true;
+        _lastTransferBlock[msg.sender] = block.number;
 
         uint256 startId = totalSupply() + _startTokenId();
         registerName(_laziPost, startId);
         _safeMint(msg.sender, 1);
+    }
+
+    function safeTransferFromWithCheck(address from, address to, uint256 startTokenId) public {
+        require(_lastTransferBlock[from] != block.number, "Repeat transaction in the same block");
+        require(_lastTransferBlock[to] != block.number, "Repeat transaction in the same block");
+
+        _lastTransferBlock[from] = block.number;
+        _lastTransferBlock[to] = block.number;
+
+        safeTransferFrom(from, to, startTokenId);
     }
 
     function messageHash(string memory _message) public pure returns (bytes32) {
@@ -161,6 +201,31 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         return signer;
     }
 
+    function buyNftSigned(uint256 tokenId, bytes32 _signedMessageHash, bytes memory _signature) external payable {
+        NftListing storage listing = nftListings[tokenId];
+        require(listing.active, "NFT is not listed for sale");
+        require(msg.value >= listing.price, "Insufficient payment");
+        require(_signatureUsed[_signature] == false, "Signature is Already Used");
+        require(_signature.length == 65, "Invalid signature length");
+        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
+        require(recoveredMintSigner == mintSigner, "Invalid signature");
+        _signatureUsed[_signature] = true;
+
+        address seller = listing.seller;
+        address buyer = msg.sender;
+        uint256 price = listing.price;
+
+        // Transfer the NFT from the seller to the buyer
+        // _transfer(seller, buyer, tokenId);
+        safeTransferFromWithCheck(seller, buyer, tokenId);
+
+        // Transfer the payment to the seller
+        Address.sendValue(payable(seller), price);
+
+        // Deactivate the listing
+        delete nftListings[tokenId];
+    }
+
     function buyNft(uint256 tokenId) external payable {
         NftListing storage listing = nftListings[tokenId];
         require(listing.active, "NFT is not listed for sale");
@@ -172,7 +237,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
 
         // Transfer the NFT from the seller to the buyer
         // _transfer(seller, buyer, tokenId);
-        safeTransferFrom(seller, buyer, tokenId);
+        safeTransferFromWithCheck(seller, buyer, tokenId);
 
         // Transfer the payment to the seller
         Address.sendValue(payable(seller), price);
