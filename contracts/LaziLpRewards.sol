@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./LaziToken.sol";
+import "./laziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -41,6 +41,7 @@ contract LaziLpRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256[] public lockPeriods;
+    mapping(uint256 => uint256) public lockPeriodMultipliers;
     uint256[] public erc721Multipliers;
 
     constructor(
@@ -48,18 +49,28 @@ contract LaziLpRewards is Ownable, ERC721Holder, ReentrancyGuard {
         LAZI _rewardToken,
         IERC721 _erc721,
         uint256[] memory lockPeriodsInput,
+        uint256[] memory lockPeriodMultipliersInput,
         uint256[] memory erc721MultipliersInput
     ) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
         erc721 = _erc721;
         setLockPeriods(lockPeriodsInput);
+        setLockPeriodMultipliers(lockPeriodMultipliersInput);
         setERC721Multipliers(erc721MultipliersInput);
     }
 
     function setLockPeriods(uint256[] memory periods) public onlyOwner {
         require(periods.length > 0, "At least one lock period must be provided");
         lockPeriods = periods;
+    }
+
+    function setLockPeriodMultipliers(uint256[] memory multipliers) public onlyOwner {
+        require(multipliers.length > 0, "At least one lock period multiplier must be provided");
+        require(multipliers.length == lockPeriods.length, "Number of lock period multipliers must match the number of lock periods");
+        for (uint256 i = 0; i < multipliers.length; i++) {
+            lockPeriodMultipliers[lockPeriods[i]] = multipliers[i];
+        }
     }
 
     function setERC721Multipliers(uint256[] memory multipliers) public onlyOwner {
@@ -75,12 +86,12 @@ contract LaziLpRewards is Ownable, ERC721Holder, ReentrancyGuard {
         return erc721Multipliers[erc721Tokens];
     }
 
-    function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriodIndex) private view returns (uint256) {
-        uint256 lockPeriodMultiplier = lockPeriodIndex + 1;
+    function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
+        uint256 lockPeriodMultiplier = lockPeriodMultipliers[lockPeriod];
 
         uint256 erc721Multiplier = getERC721Multiplier(erc721Tokens);
 
-        return lockPeriodMultiplier * erc721Multiplier;
+        return (lockPeriodMultiplier * erc721Multiplier) / 100;
     }
 
     function _mintRewardTokens(address recipient, uint256 amount) private {
