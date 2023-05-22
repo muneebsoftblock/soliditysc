@@ -22,6 +22,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
     mapping(bytes => bool) public _signatureUsed;
 
     uint256 public laziNamePrice = 0.016 * 1e18; // $5 / 0.016 BNB
+    uint256 public laziNamePriceWL = 0.010 * 1e18; // $3 / 0.01 BNB
     uint256 public saleActiveTime = type(uint256).max;
 
     address public mintSigner = msg.sender;
@@ -86,7 +87,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         string[] calldata _laziNames,
         bytes32 _signedMessageHash,
         bytes memory _signature
-    ) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
+    ) external payable saleActive(saleActiveTime) pricePaidWL(_laziNames.length) {
         require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
         _lastTransferBlock[msg.sender] = block.number;
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
@@ -156,6 +157,10 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         laziNamePrice = _laziNamePrice;
     }
 
+    function set_laziNamePriceWL(uint256 _laziNamePriceWL) external onlyOwner {
+        laziNamePriceWL = _laziNamePriceWL;
+    }
+
     function set_saleActiveTime(uint256 _saleActiveTime) external onlyOwner {
         saleActiveTime = _saleActiveTime;
     }
@@ -179,8 +184,17 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         priceNow = laziNamePrice * _qty;
     }
 
+    function getPriceWL(uint256 _qty) public view returns (uint256 priceNow) {
+        priceNow = laziNamePriceWL * _qty;
+    }
+
     modifier pricePaid(uint256 _qty) {
         require(msg.value == getPrice(_qty), "Hey hey, send the right amount of ETH");
+        _;
+    }
+
+    modifier pricePaidWL(uint256 _qty) {
+        require(msg.value == getPriceWL(_qty), "Hey hey, send the right amount of ETH");
         _;
     }
 
