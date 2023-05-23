@@ -214,14 +214,4 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
-
-    function _beforeTokenTransfers(address from, address to, uint256 amount, uint256 quantity) internal override {
-        require(_lastTransferBlock[from] != block.number, "Repeat transaction in the same block");
-        require(_lastTransferBlock[to] != block.number, "Repeat transaction in the same block");
-
-        _lastTransferBlock[from] = block.number;
-        _lastTransferBlock[to] = block.number;
-
-        super._beforeTokenTransfers(from, to, amount, 1);
-    }
 }

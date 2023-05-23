@@ -32,16 +32,6 @@ contract LAZI is ERC20, Pausable, AccessControl {
         _mint(to, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
-        require(_lastTransferBlock[from] != block.number, "Repeat transaction in the same block");
-        require(_lastTransferBlock[to] != block.number, "Repeat transaction in the same block");
-
-        _lastTransferBlock[from] = block.number;
-        _lastTransferBlock[to] = block.number;
-
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
     function buyTokens() public payable {
         uint256 tokensToBuy = msg.value * 1e18 / price;
 
