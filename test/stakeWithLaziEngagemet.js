@@ -1,10 +1,18 @@
 const { expect } = require("chai")
 const { BN, ether, time } = require("@openzeppelin/test-helpers")
 
+const fromWei = web3.utils.fromWei
+
 const Staking = artifacts.require("LaziEngagementRewards")
 const ERC20 = artifacts.require("LAZI")
 const ERC721 = artifacts.require("LaziName")
-const viewStruct = (obj) => Object.keys(obj).map((k) => isNaN(k) && console.log(k + " " + obj[k]))
+const viewStruct = (obj) =>
+    Object.keys(obj).forEach(
+        (k) =>
+            isNaN(k) &&
+            (k === "stakedLazi" || k === "stakedLaziWeighted" ? console.log(k + " " + fromWei("" + obj[k])) : console.log(k + " " + obj[k]))
+    )
+
 contract("Staking", (accounts) => {
     const [owner, user1, user2] = accounts
     let staking, erc20, erc721

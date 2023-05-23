@@ -1,11 +1,19 @@
 const { expect } = require("chai")
 const { BN, ether, time } = require("@openzeppelin/test-helpers")
 
+const fromWei = web3.utils.fromWei
 const Staking = artifacts.require("StakeLaziThings")
 const ERC20 = artifacts.require("LAZI")
 const ERC721 = artifacts.require("LaziName")
 
-const viewStruct = (obj) => Object.keys(obj).forEach((k) => isNaN(k) && console.log(k + " " + obj[k]))
+const viewStruct = (obj) =>
+    Object.keys(obj).forEach(
+        (k) =>
+            isNaN(k) &&
+            (k === "weightedStake" || k === "stakingAmount" || k === "claimedRewards"
+                ? console.log(k + " " + fromWei("" + obj[k]))
+                : console.log(k + " " + obj[k]))
+    )
 
 contract("Staking", (accounts) => {
     const [owner, user1, user2] = accounts
@@ -48,8 +56,8 @@ contract("Staking", (accounts) => {
 
         const user1Rewards = await staking.getUserRewards(user1)
         const user2Rewards = await staking.getUserRewards(user2)
-        console.log("User 1 rewards:", user1Rewards.toString())
-        console.log("User 2 rewards:", user2Rewards.toString())
+        console.log("User 1 rewards:", fromWei(user1Rewards.toString()))
+        console.log("User 2 rewards:", fromWei(user2Rewards.toString()))
 
         const stakeInfo1 = await staking.stakes(user1)
         const stakeInfo2 = await staking.stakes(user2)
@@ -114,7 +122,7 @@ contract("Staking", (accounts) => {
 
         const userRewards = await staking.getUserRewards(user1)
 
-        console.log("User Rewards:", userRewards.toString())
+        console.log("User Rewards:", fromWei(userRewards.toString()))
 
         const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
         const totalStaked = await staking.totalStaked()
@@ -179,14 +187,14 @@ contract("Staking", (accounts) => {
         const userBRewards = await staking.getUserRewards(userB)
         const totalRewards = userARewards.add(userBRewards)
 
-        console.log("User A rewards:", userARewards.toString())
-        console.log("User B rewards:", userBRewards.toString())
-        console.log("Total rewards:", totalRewards.toString())
+        console.log("User A rewards:", fromWei(userARewards.toString()))
+        console.log("User B rewards:", fromWei(userBRewards.toString()))
+        console.log("Total rewards:", fromWei(totalRewards.toString()))
 
         const daysToStake = [0, 30, 60, 90, 180, 365]
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
-        console.log("total reward! ", totalRewards.toString())
-        assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
+        console.log("total reward! ", fromWei(totalRewards.toString()))
+        assert(fromWei(totalRewards.toString()).includes("137000"), "Total rewards should be 137,000 tokens")
     })
 })
