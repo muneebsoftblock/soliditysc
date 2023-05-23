@@ -73,8 +73,6 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
     }
 
     function buyLaziNames(string[] calldata _laziNames) external payable saleActive(saleActiveTime) pricePaid(_laziNames.length) {
-        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
-        _lastTransferBlock[msg.sender] = block.number;
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
             registerName(_laziNames[i], startId + i);
@@ -88,10 +86,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         bytes32 _signedMessageHash,
         bytes memory _signature
     ) external payable saleActive(saleActiveTime) pricePaidWL(_laziNames.length) {
-        require(_lastTransferBlock[msg.sender] != block.number, "Repeat transaction in the same block");
-        _lastTransferBlock[msg.sender] = block.number;
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
-
         require(_signature.length == 65, "Invalid signature length");
         address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
         require(recoveredMintSigner == mintSigner, "Invalid signature");
@@ -220,7 +215,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         return super.isApprovedForAll(_owner, _operator);
     }
 
-    function _beforeTokenTransfers(address from, address to, uint256 amount) internal {
+    function _beforeTokenTransfers(address from, address to, uint256 amount, uint256 quantity) internal override {
         require(_lastTransferBlock[from] != block.number, "Repeat transaction in the same block");
         require(_lastTransferBlock[to] != block.number, "Repeat transaction in the same block");
 
