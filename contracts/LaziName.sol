@@ -27,6 +27,8 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
 
     address public mintSigner = msg.sender;
 
+    mapping(address => bool) public WL;
+
     string laziNameImages;
 
     // LaziName Auto Approves Marketplaces
@@ -80,67 +82,6 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         _safeMint(msg.sender, _laziNames.length);
     }
 
-    function buyLaziNamesWhitelist(
-        string[] calldata _laziNames,
-        bytes32 _signedMessageHash,
-        bytes memory _signature
-    ) external payable saleActive(saleActiveTime) pricePaidWL(_laziNames.length) {
-        require(_signatureUsed[_signature] == false, "Signature is Already Used");
-        require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == mintSigner, "Invalid signature");
-        _signatureUsed[_signature] = true;
-
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziNames.length; i++) {
-            registerName(_laziNames[i], startId + i);
-        }
-
-        _safeMint(msg.sender, _laziNames.length);
-    }
-
-    function messageHash(string memory _message) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
-    }
-
-    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
-        /*
-        Signature is produced by signing a keccak256 hash with the following format:
-        "\x19Ethereum Signed Message\n" + len(msg) + msg
-        */
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
-    }
-
-    // verifySignature helper function
-    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature) public pure returns (address) {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // Check the signature length
-        require(_signature.length == 65, "Invalid signature length");
-
-        // Divide the signature into its three components
-        assembly {
-            r := mload(add(_signature, 32))
-            s := mload(add(_signature, 64))
-            v := and(mload(add(_signature, 65)), 255)
-        }
-
-        // Ensure the validity of v
-        // Ensure the validity of v
-        if (v < 27) {
-            v += 27;
-        }
-        require(v == 27 || v == 28, "Invalid signature v value");
-
-        // Recover the signer's address
-        address signer = ecrecover(_signedMessageHash, v, r, s);
-        require(signer != address(0), "Invalid signature");
-
-        return signer;
-    }
-
     // onlyOwner functions
     function withdraw() external onlyOwner {
         (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
@@ -149,6 +90,14 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
 
     function set_laziNamePrice(uint256 _laziNamePrice) external onlyOwner {
         laziNamePrice = _laziNamePrice;
+    }
+
+    function addToWL(address[] calldata addresses) external onlyOwner {
+        for (uint256 i = 0; i < addresses.length; i++) WL[addresses[i]] = true;
+    }
+
+    function removeFromWL(address[] calldata addresses) external onlyOwner {
+        for (uint256 i = 0; i < addresses.length; i++) WL[addresses[i]] = false;
     }
 
     function set_laziNamePriceWL(uint256 _laziNamePriceWL) external onlyOwner {
@@ -175,20 +124,12 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
 
     // Price Module
     function getPrice(uint256 _qty) public view returns (uint256 priceNow) {
-        priceNow = laziNamePrice * _qty;
-    }
-
-    function getPriceWL(uint256 _qty) public view returns (uint256 priceNow) {
-        priceNow = laziNamePriceWL * _qty;
+        if (WL[msg.sender]) priceNow = laziNamePriceWL * _qty;
+        else priceNow = laziNamePrice * _qty;
     }
 
     modifier pricePaid(uint256 _qty) {
         require(msg.value == getPrice(_qty), "Hey hey, send the right amount of ETH");
-        _;
-    }
-
-    modifier pricePaidWL(uint256 _qty) {
-        require(msg.value == getPriceWL(_qty), "Hey hey, send the right amount of ETH");
         _;
     }
 
