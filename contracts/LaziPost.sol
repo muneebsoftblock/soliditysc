@@ -40,7 +40,6 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
 
     mapping(uint256 => NftListing) public nftListings;
     mapping(uint256 => uint256) public tokenPrice;
-    // Store last transfer block for each address
 
     // these lines are called only once when the contract is deployed
     constructor() {
