@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./LaziToken.sol";
+import "./laziToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -59,6 +59,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public PENALTY_POOL;
     uint256[] public multiplierValues;
+    mapping(bytes => bool) public _signatureUsed;
+
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
@@ -120,23 +122,14 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @notice Unstake LAZI tokens and ERC721 tokens
      */
 
-    function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution) external nonReentrant {
-        // add to function inputs
-        // uint timestamp,
-        // bytes32 timeContributionHash,
-        // uint8 v,
-        // bytes32 r,
-        // bytes32 s
-        //
-        // add to function code
-        // address signer = ecrecover(timeContributionHash, v, r, s);
-        // require(signer == trustedAddress, "Not signed by trusted address");
-        // bytes32 expectedMessageHash = keccak256(abi.encodePacked(timestamp, contributionWeighted,totalWeightedContribution));
-        // require(timeContributionHash == expectedMessageHash, "Message hash mismatch");
-        // require(!processedValues[timeContributionHash], "Time Contribution Hash has been processed already");
-        // processedValues[timeContributionHash] = true;
 
+    function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution,bytes32 _messageHash, bytes memory _signature) external nonReentrant {
         User storage user = users[msg.sender];
+        require(_signatureUsed[_signature] == false, "Signature is Already Used");
+        require(_signature.length == 65, "Invalid signature length");
+        address recoveredMintSigner = verifySignature(_messageHash, _signature);
+        require(recoveredMintSigner == trustedAddress, "Invalid signature");
+        _signatureUsed[_signature] = true;
         require(user.stakedLazi > 0, "No stake to unstake");
 
         uint256 reward = getUserRewards(msg.sender, contributionWeighted, totalWeightedContribution);
@@ -175,6 +168,39 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         emit RewardsClaimed(msg.sender, reward - rewardPenalty);
         emit Unstaked(msg.sender, user.stakedLazi, user.erc721TokenIds);
         delete users[msg.sender];
+    }
+
+    function messageHash(string memory _message) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
+    }
+
+    function verifySignature(bytes32 _messageHash, bytes memory _signature) public pure returns (address) {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // Check the signature length
+        require(_signature.length == 65, "Invalid signature length");
+
+        // Divide the signature into its three components
+        assembly {
+            r := mload(add(_signature, 32))
+            s := mload(add(_signature, 64))
+            v := and(mload(add(_signature, 65)), 255)
+        }
+
+        // Ensure the validity of v
+        // Ensure the validity of v
+        if (v < 27) {
+            v += 27;
+        }
+        require(v == 27 || v == 28, "Invalid signature v value");
+
+        // Recover the signer's address
+        address signer = ecrecover(_messageHash, v, r, s);
+        require(signer != address(0), "Invalid signature");
+
+        return signer;
     }
 
     /**
