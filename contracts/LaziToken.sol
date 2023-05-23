@@ -11,7 +11,6 @@ contract LAZI is ERC20, Pausable, AccessControl {
 
     uint256 public price = 0.00001 ether;
     uint256 public maxSupply = 50_000_000_000 * 1e18;
-    mapping(address => uint256) private _lastTransferBlock;
 
 
     constructor() ERC20("LAZI", "LAZI") {

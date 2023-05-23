@@ -31,7 +31,6 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
 
     // LaziName Auto Approves Marketplaces
     mapping(address => bool) private allowed;
-    mapping(address => uint256) private _lastTransferBlock;
 
     // these lines are called only once when the contract is deployed
     constructor() {
