@@ -38,8 +38,8 @@ contract LaziLpReward is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
 
-    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_DAY = 137_000 ether;
+    uint256 public REWARD_STOP_TIME = block.timestamp + 183 days;
+    uint256 public REWARD_PER_DAY = 115_200 ether;
     uint256[] public lockPeriods;
     mapping(uint256 => uint256) public lockPeriodMultipliers;
     uint256[] public erc721Multipliers;
