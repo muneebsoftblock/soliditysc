@@ -61,7 +61,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256[] public multiplierValues;
     mapping(bytes => bool) public _signatureUsed;
 
-
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
     event Unstaked(address indexed user, uint256 stakedLazi, uint256[] erc721TokenIds);
     event RewardsClaimed(address indexed user, uint256 reward);
@@ -122,8 +121,12 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @notice Unstake LAZI tokens and ERC721 tokens
      */
 
-
-    function unstake(uint256 contributionWeighted, uint256 totalWeightedContribution,bytes32 _messageHash, bytes memory _signature) external nonReentrant {
+    function unstake(
+        uint256 contributionWeighted,
+        uint256 totalWeightedContribution,
+        bytes32 _messageHash,
+        bytes memory _signature
+    ) external nonReentrant {
         User storage user = users[msg.sender];
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         require(_signature.length == 65, "Invalid signature length");
