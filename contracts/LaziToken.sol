@@ -10,7 +10,7 @@ contract LAZI is ERC20, Pausable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     uint256 public price = 0.00001 ether;
-    uint256 public maxSupply = 50_000_000_000 * 1e18;
+    uint256 public maxSupply = 1_000_000_000 * 1e18;
 
 
     constructor() ERC20("LAZI", "LAZI") {
