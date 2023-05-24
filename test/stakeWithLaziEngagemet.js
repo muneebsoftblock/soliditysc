@@ -22,6 +22,8 @@ contract("Staking", (accounts) => {
         erc721 = await ERC721.new({ from: owner })
 
         staking = await Staking.new(erc20.address, erc721.address, { from: owner })
+        await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
+
 
         await erc20.mint(user1, ether("5000"), { from: owner })
         await erc20.mint(user2, ether("5000"), { from: owner })
@@ -29,6 +31,7 @@ contract("Staking", (accounts) => {
 
         await erc721.airdrop([user1, user1, user1], ["1 one", "2 two", "3 three"], { from: owner })
         await erc721.airdrop([user2, user2, user2, user2, user2], ["4 f", "5 f", "6 s", "7 s", "8 e"], { from: owner })
+
     })
 
     it("should stake ERC20 tokens and ERC721 tokens", async () => {
@@ -50,22 +53,32 @@ contract("Staking", (accounts) => {
         const stakedLazi = ether("100")
         const stakeDuration = 30
         const erc721TokenId = 1
-        await erc20.approve(staking.address, stakedLazi, {from: user1})
-        await erc721.approve(staking.address, erc721TokenId, {from: user1})
+        await erc20.approve(staking.address, stakedLazi, { from: user1 })
+        await erc721.approve(staking.address, erc721TokenId, { from: user1 })
         await staking.set_trustedAddress(accounts[3])
-        await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], {from: user1})
+        await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], { from: user1 })
 
         // Fast-forward time to complete the stake duration
         await time.increase(time.duration.days(stakeDuration))
 
         // Unstake and claim rewards
-        const contributionWeighted = ether("50")
-        const totalWeightedContribution = ether("100")
-        const timestamp = Math.floor(Date.now() / 1000) // Current timestamp
+        const privateKey = "dfbeda793c0d2bebee953029221fcc5a7c2cfa38403a27ad0fe0cf399cba9fc4"
+        const contributionWeighted = 15
+        const totalWeightedContribution = 100
+        const timestamp = Date.now().toString()
+        const message = "15" + "100" + timestamp
+        console.log("score ", contributionWeighted)
+        console.log("total score ", totalWeightedContribution)
+        console.log("timestamp ", timestamp)
+        console.log("message ", message)
         // const signature = await signMessageHash(web3, [contributionWeighted, totalWeightedContribution, timestamp]);
-        const messageHash = contributionWeighted + totalWeightedContribution + timestamp
-        const signature = await web3.eth.personal.sign(messageHash, accounts[3])
-        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature, {from: user1})
+        const prefixedMessage = web3.utils.sha3("\x19Ethereum Signed Message:\n32" + message)
+        const signature  = web3.eth.accounts.sign(prefixedMessage, privateKey)
+        console.log("signature! ", signature)
+        const recoveredAddress = web3.eth.accounts.recover(prefixedMessage, signature.signature)
+        console.log("Recovered Address! ", recoveredAddress)
+
+        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature.signature, { from: user1 })
 
         // Check user balance after unstaking
         const userBalance = await erc20.balanceOf(accounts[0])

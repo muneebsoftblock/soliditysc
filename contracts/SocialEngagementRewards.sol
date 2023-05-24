@@ -23,7 +23,7 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 Users can stake their tokens for a specified duration and earn rewards based on the staked amount, duration, and the number of staked ERC721 tokens.
 */
 contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
-    address public trustedAddress = msg.sender;
+    address public trustedAddress = 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd;
     mapping(bytes32 => bool) public processedValues;
 
     LAZI public laziToken;
@@ -122,21 +122,29 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function unstake(
-        uint256 _contributionWeighted,
-        uint256 _totalWeightedContribution,
-        uint256 _timestamp,
+        uint256 contributionWeighted,
+        uint256 totalWeightedContribution,
+        uint256 timestamp,
         bytes memory _signature
     ) external nonReentrant {
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         _signatureUsed[_signature] = true;
-        bytes32 _messageHash = messageHash(abi.encodePacked(_contributionWeighted, _totalWeightedContribution, _timestamp));
-        address recoveredMintSigner = verifySignature(_messageHash, _signature);
-        require(recoveredMintSigner == trustedAddress, "Invalid signature");
+string memory message = string(
+            abi.encodePacked(
+                toString(contributionWeighted),
+                toString(totalWeightedContribution),
+                toString(timestamp)
+            )
+        );
+        bytes32 _messageHash = messageHash(message);
+        bytes32 _signedMessageHash = getEthSignedMessageHash(_messageHash);
+        address recoveredA = verifySignature(_signedMessageHash, _signature);
+        require(recoveredA==0xCb1345D9bb0658d8424Bb092C62795204E3994Fd,"Invalid Signature!");
 
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
 
-        uint256 reward = getUserRewards(msg.sender, _contributionWeighted, _totalWeightedContribution);
+        uint256 reward = getUserRewards(msg.sender, contributionWeighted, totalWeightedContribution);
 
         uint256 completedDurationPercentage = ((block.timestamp - user.stakeStartTime) * 100) / user.stakeDuration;
         uint256 stakedPenalty;
@@ -173,8 +181,61 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         delete users[msg.sender];
     }
 
-    function messageHash(bytes memory _message) public pure returns (bytes32) {
+    function toString(uint256 value) public pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+
+        uint256 temp = value;
+        uint256 digits;
+        
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+
+        bytes memory buffer = new bytes(digits);
+
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+
+        return string(buffer);
+    }
+
+
+    // function verify(
+    //     uint256 contributionWeighted,
+    //     uint256 totalWeightedContribution,
+    //     uint256 timestamp,
+    //     bytes memory _signature) public pure returns (address) {
+    //     string memory message = string(
+    //         abi.encodePacked(
+    //             toString(contributionWeighted),
+    //             toString(totalWeightedContribution),
+    //             toString(timestamp)
+    //         )
+    //     );
+    //     bytes32 _messageHash = messageHash(message);
+    //     bytes32 _signedMessageHash = getEthSignedMessageHash(_messageHash);
+    //     address user = verifySignature(_signedMessageHash, _signature);
+    //     return  user;
+
+    // }
+    
+
+    function messageHash(string memory _message) public pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
+    }
+
+    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
+        /*
+        Signature is produced by signing a keccak256 hash with the following format:
+        "\x19Ethereum Signed Message\n" + len(msg) + msg
+        */
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
     function verifySignature(bytes32 _messageHash, bytes memory _signature) public pure returns (address) {
