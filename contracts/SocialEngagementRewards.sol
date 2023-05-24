@@ -129,17 +129,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     ) external nonReentrant {
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         _signatureUsed[_signature] = true;
-string memory message = string(
-            abi.encodePacked(
-                toString(contributionWeighted),
-                toString(totalWeightedContribution),
-                toString(timestamp)
-            )
-        );
+        string memory message = string(abi.encodePacked(toString(contributionWeighted), toString(totalWeightedContribution), toString(timestamp)));
         bytes32 _messageHash = messageHash(message);
         bytes32 _signedMessageHash = getEthSignedMessageHash(_messageHash);
         address recoveredA = verifySignature(_signedMessageHash, _signature);
-        require(recoveredA==0xCb1345D9bb0658d8424Bb092C62795204E3994Fd,"Invalid Signature!");
+        require(recoveredA == 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd, "Invalid Signature!");
 
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
@@ -188,7 +182,7 @@ string memory message = string(
 
         uint256 temp = value;
         uint256 digits;
-        
+
         while (temp != 0) {
             digits++;
             temp /= 10;
@@ -204,7 +198,6 @@ string memory message = string(
 
         return string(buffer);
     }
-
 
     // function verify(
     //     uint256 contributionWeighted,
@@ -224,7 +217,6 @@ string memory message = string(
     //     return  user;
 
     // }
-    
 
     function messageHash(string memory _message) public pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
