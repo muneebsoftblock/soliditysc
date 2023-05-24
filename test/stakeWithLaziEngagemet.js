@@ -45,6 +45,41 @@ contract("Staking", (accounts) => {
         viewStruct(stakeInfo)
     })
 
+    it("should allow users to unstake and claim rewards", async () => {
+        // Approve and stake tokens
+        const stakedLazi = ether("100")
+        const stakeDuration = 30
+        const erc721TokenId = 1
+        await erc20.approve(staking.address, stakedLazi, {from: user1})
+        await erc721.approve(staking.address, erc721TokenId, {from: user1})
+        await staking.set_trustedAddress(accounts[3])
+        await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], {from: user1})
+
+        // Fast-forward time to complete the stake duration
+        await time.increase(time.duration.days(stakeDuration))
+
+        // Unstake and claim rewards
+        const contributionWeighted = ether("50")
+        const totalWeightedContribution = ether("100")
+        const timestamp = Math.floor(Date.now() / 1000) // Current timestamp
+        // const signature = await signMessageHash(web3, [contributionWeighted, totalWeightedContribution, timestamp]);
+        const messageHash = contributionWeighted + totalWeightedContribution + timestamp
+        const signature = await web3.eth.personal.sign(messageHash, accounts[3])
+        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature, {from: user1})
+
+        // Check user balance after unstaking
+        const userBalance = await erc20.balanceOf(accounts[0])
+        expect(userBalance).to.be.bignumber.equal(stakedLazi)
+
+        // Check contract balance after unstaking
+        const contractBalance = await erc20.balanceOf(staking.address)
+        expect(contractBalance).to.be.bignumber.equal(ether("0"))
+
+        // Check ERC721 token ownership after unstaking
+        const ownerOfERC721 = await erc721.ownerOf(erc721TokenId)
+        expect(ownerOfERC721).to.equal(accounts[0])
+    })
+
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
 
     // it("should unstake ERC20 tokens and ERC721 tokens", async () => {

@@ -122,25 +122,25 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function unstake(
-        uint256 contributionWeighted,
-        uint256 totalWeightedContribution,
-        bytes32 _messageHash,
+        uint256 _contributionWeighted,
+        uint256 _totalWeightedContribution,
+        uint256 _timestamp,
         bytes memory _signature
     ) external nonReentrant {
-        User storage user = users[msg.sender];
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
-        require(_signature.length == 65, "Invalid signature length");
+        _signatureUsed[_signature] = true;
+        bytes32 _messageHash = messageHash(abi.encodePacked(_contributionWeighted, _totalWeightedContribution, _timestamp));
         address recoveredMintSigner = verifySignature(_messageHash, _signature);
         require(recoveredMintSigner == trustedAddress, "Invalid signature");
-        _signatureUsed[_signature] = true;
+
+        User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
 
-        uint256 reward = getUserRewards(msg.sender, contributionWeighted, totalWeightedContribution);
+        uint256 reward = getUserRewards(msg.sender, _contributionWeighted, _totalWeightedContribution);
 
         uint256 completedDurationPercentage = ((block.timestamp - user.stakeStartTime) * 100) / user.stakeDuration;
         uint256 stakedPenalty;
         uint256 rewardPenalty;
-
         if (completedDurationPercentage < 50) {
             stakedPenalty = (user.stakedLazi * 30) / 100;
             rewardPenalty = (reward * 50) / 100;
@@ -173,7 +173,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         delete users[msg.sender];
     }
 
-    function messageHash(string memory _message) public pure returns (bytes32) {
+    function messageHash(bytes memory _message) public pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
     }
 
@@ -192,7 +192,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             v := and(mload(add(_signature, 65)), 255)
         }
 
-        // Ensure the validity of v
         // Ensure the validity of v
         if (v < 27) {
             v += 27;

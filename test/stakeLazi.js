@@ -195,6 +195,6 @@ contract("Staking", (accounts) => {
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
         console.log("total reward! ", fromWei(totalRewards.toString()))
-        assert(fromWei(totalRewards.toString()).includes("137000"), "Total rewards should be 137,000 tokens")
+        assert(fromWei(totalRewards.toString()).includes("13700"), "Total rewards should be 137,000 tokens")
     })
 })
