@@ -185,16 +185,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     function getMultiplier(User memory user) internal view returns (uint256) {
         uint256 S = totalWeightedStakedLazi == 0 ? 1e18 : (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
         uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
-        uint256 U;
+        uint256 U = getMultiplierValue(user.erc721TokenIds.length);
 
-        uint256 erc721Tokens = user.erc721TokenIds.length;
-        if (erc721Tokens == 0) {
-            U = getMultiplierValue(0);
-        } else {
-            // Limit the index based on the number of multiplier values available
-            uint256 index = Math.min(erc721Tokens, multiplierValues.length) - 1;
-            U = getMultiplierValue(index);
-        }
+        if (S < 1e18) S = 1e18;
+        if (T < 1e18) T = 1e18;
+        if (U < 1e18) U = 1e18;
 
         return (S * T * U) / 1e36;
     }
@@ -216,11 +211,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @param _multiplierValues An array of multiplier values
      */
     function updateMultiplierValues(uint256[] calldata _multiplierValues) external onlyOwner {
-        require(_multiplierValues.length == 6, "Invalid number of multiplier values");
-
-        for (uint256 i = 0; i < _multiplierValues.length; i++) {
-            multiplierValues[i] = _multiplierValues[i];
-        }
+        multiplierValues = _multiplierValues;
     }
 
     /**
@@ -229,8 +220,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @return The multiplier value
      */
     function getMultiplierValue(uint256 index) internal view returns (uint256) {
-        require(index < multiplierValues.length, "Invalid index");
-
+        if (index >= multiplierValues.length) index = multiplierValues.length - 1;
         return multiplierValues[index];
     }
 
@@ -244,6 +234,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         User storage user = users[_user];
         uint checkPoint = Math.min(block.timestamp, REWARD_STOP_TIME);
 
+        if (user.stakeStartTime == 0) return 0;
         if (checkPoint <= user.stakeStartTime) return 0;
 
         uint256 elapsedTime = checkPoint - user.stakeStartTime;
