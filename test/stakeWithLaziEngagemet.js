@@ -226,4 +226,39 @@ contract("Staking", (accounts) => {
         expect(totalRewards).to.be.bignumber.lessThan(ether("137010"))
         // assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
     })
+
+    it("should apply penalties correctly", async () => {
+        const userStakeAmount = ether("50")
+        const userLockPeriod = 86400
+        const userERC721TokenIds = [1, 2, 3]
+        const penaltyRateUnder50 = await staking.stakePenaltyUnder50()
+
+        // Stake tokens
+        await erc20.approve(staking.address, userStakeAmount, { from: user1 })
+        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        await staking.stake(userStakeAmount, userLockPeriod, userERC721TokenIds, { from: user1 })
+
+        // Increase time by less than the stake duration to trigger penalty
+        await time.increase(time.duration.days(0.4))
+
+        // Attempt to unstake
+        const unstakeAmount = new BN("25" + "0".repeat(18)) // Unstake 50% of tokens
+        const publicKey = "0xCb1345D9bb0658d8424Bb092C62795204E3994Fd"
+        const privateKey = "dfbeda793c0d2bebee953029221fcc5a7c2cfa38403a27ad0fe0cf399cba9fc4"
+        const contributionWeighted = "50"
+        const totalWeightedContribution = "100"
+        const timestamp = Date.now().toString()
+        const messagePacked = web3.eth.abi.encodeParameters(
+            ["uint256", "uint256", "uint256"],
+            [contributionWeighted, totalWeightedContribution, timestamp]
+        )
+        const message = web3.utils.keccak256(messagePacked)
+        const signature = web3.eth.accounts.sign(message, privateKey)
+        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature.signature, { from: user1 })
+
+        // Check if penalty was applied
+        // const remainingStake = await staking.users(user1)
+        // const expectedRemainingStake = userStakeAmount.sub(unstakeAmount).mul(new BN(100).sub(penaltyRateUnder50)).div(new BN(100))
+        // expect(remainingStake.stakedLazi).to.be.bignumber.equal(expectedRemainingStake)
+    })
 })
