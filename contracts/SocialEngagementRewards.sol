@@ -32,10 +32,19 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public w1 = 50;
     uint256 public w2 = 35;
     uint256 public w3 = 15;
-    
+
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public maxEngagementDays = 2000 days;
+
+    // Define penalty variables
+    uint256 public stakePenaltyUnder50 = 30;
+    uint256 public stakePenaltyBetween50And80 = 15;
+    uint256 public stakePenaltyBetween80And100 = 5;
+
+    uint256 public rewardPenaltyUnder50 = 50;
+    uint256 public rewardPenaltyBetween50And80 = 25;
+    uint256 public rewardPenaltyBetween80And100 = 15;
 
     struct User {
         uint256 stakedLazi;
@@ -55,7 +64,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     uint256 public totalWeightedStakedLazi;
     uint256 public totalWeightedStakedDuration;
-
 
     uint256 public PENALTY_POOL;
     uint256[] public multiplierValues;
@@ -142,14 +150,14 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 stakedPenalty;
         uint256 rewardPenalty;
         if (completedDurationPercentage < 50) {
-            stakedPenalty = (user.stakedLazi * 30) / 100;
-            rewardPenalty = (reward * 50) / 100;
+            stakedPenalty = (user.stakedLazi * stakePenaltyUnder50) / 100;
+            rewardPenalty = (reward * rewardPenaltyUnder50) / 100;
         } else if (completedDurationPercentage >= 50 && completedDurationPercentage < 80) {
-            stakedPenalty = (user.stakedLazi * 15) / 100;
-            rewardPenalty = (reward * 25) / 100;
+            stakedPenalty = (user.stakedLazi * stakePenaltyBetween50And80) / 100;
+            rewardPenalty = (reward * rewardPenaltyBetween50And80) / 100;
         } else if (completedDurationPercentage >= 80 && completedDurationPercentage < 100) {
-            stakedPenalty = (user.stakedLazi * 5) / 100;
-            rewardPenalty = (reward * 15) / 100;
+            stakedPenalty = (user.stakedLazi * stakePenaltyBetween80And100) / 100;
+            rewardPenalty = (reward * rewardPenaltyBetween80And100) / 100;
         }
 
         laziToken.mint(msg.sender, reward - rewardPenalty);
@@ -279,5 +287,30 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     function set_smartContractLinkedAddressAPI(address _smartContractLinkedAddressAPI) external onlyOwner {
         smartContractLinkedAddressAPI = _smartContractLinkedAddressAPI;
+    }
+
+    function updatePenalties(
+        uint256 _stakePenaltyUnder50,
+        uint256 _stakePenaltyBetween50And80,
+        uint256 _stakePenaltyBetween80And100,
+        uint256 _rewardPenaltyUnder50,
+        uint256 _rewardPenaltyBetween50And80,
+        uint256 _rewardPenaltyBetween80And100
+    ) external onlyOwner {
+        require(
+            stakePenaltyUnder50 < 100 && stakePenaltyBetween50And80 < 100 && stakePenaltyBetween80And100 < 100,
+            "Unstake penalty values must be less than 100"
+        );
+        require(
+            rewardPenaltyUnder50 < 100 && rewardPenaltyBetween50And80 < 100 && rewardPenaltyBetween80And100 < 100,
+            "Reward penalty values must be less than 100"
+        );
+
+        stakePenaltyUnder50 = _stakePenaltyUnder50;
+        stakePenaltyBetween50And80 = _stakePenaltyBetween50And80;
+        stakePenaltyBetween80And100 = _stakePenaltyBetween80And100;
+        rewardPenaltyUnder50 = _rewardPenaltyUnder50;
+        rewardPenaltyBetween50And80 = _rewardPenaltyBetween50And80;
+        rewardPenaltyBetween80And100 = _rewardPenaltyBetween80And100;
     }
 }
