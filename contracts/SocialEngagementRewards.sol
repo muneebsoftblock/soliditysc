@@ -22,7 +22,7 @@ Users can stake their tokens for a specified duration and earn rewards based on 
 contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     using ECDSA for bytes32;
 
-    address public smartContractLinkedAddressAPI = 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd;
+    address public smartContractLinkedAddressAPI = 0x8E3d3c880E3D08448F480e03E9587AA50FCB48F0;
     mapping(bytes32 => bool) public processedValues;
 
     LAZI public laziToken;
