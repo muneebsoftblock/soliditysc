@@ -78,9 +78,9 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     @param _laziToken The LAZI token contract address
     @param _erc721Token The ERC721 token contract address
     */
-    constructor(address _laziToken, address _erc721Token) {
+    constructor(address _laziToken, address _laziName) {
         laziToken = LAZI(_laziToken);
-        erc721Token = IERC721(_erc721Token);
+        erc721Token = IERC721(_laziName);
         multiplierValues = new uint256[](6);
         initializeMultiplierValues();
     }
