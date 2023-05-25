@@ -26,13 +26,15 @@ Users can stake their tokens for a specified duration and earn rewards based on 
 contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     using ECDSA for bytes32;
 
-    address public trustedAddress = 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd;
+    address public smartContractLinkedAddressAPI = 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd;
     mapping(bytes32 => bool) public processedValues;
 
     LAZI public laziToken;
     IERC721 public erc721Token;
+
+    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
+    uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public maxEngagementDays = 2000 days;
-    uint256 public maxUserMultiplierTokens = 5;
 
     struct User {
         uint256 stakedLazi;
@@ -58,8 +60,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public w2 = 25;
     uint256 public w3 = 15;
 
-    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public PENALTY_POOL;
     uint256[] public multiplierValues;
     mapping(bytes => bool) public _signatureUsed;
@@ -131,7 +131,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         bytes memory _signature
     ) external nonReentrant {
         bytes32 message = keccak256(abi.encodePacked(contributionWeighted, totalWeightedContribution, timestamp));
-        require(trustedAddress == message.toEthSignedMessageHash().recover(_signature), "Invalid Signature!");
+        require(smartContractLinkedAddressAPI == message.toEthSignedMessageHash().recover(_signature), "Invalid Signature!");
 
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         _signatureUsed[_signature] = true;
@@ -155,7 +155,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             rewardPenalty = (reward * 15) / 100;
         }
 
-        laziToken.mint(msg.sender, user.stakedLazi - stakedPenalty + reward - rewardPenalty);
+        laziToken.mint(msg.sender, reward - rewardPenalty);
+        laziToken.transfer(msg.sender, user.stakedLazi - stakedPenalty);
         if (completedDurationPercentage < 100) {
             laziToken.mint(owner(), (stakedPenalty / 2) + (rewardPenalty / 2));
             PENALTY_POOL += (stakedPenalty / 2) + (rewardPenalty / 2);
@@ -284,7 +285,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         REWARD_STOP_TIME = _REWARD_STOP_TIME;
     }
 
-    function set_trustedAddress(address _trustedAddress) external onlyOwner {
-        trustedAddress = _trustedAddress;
+    function set_maxEngagementDays(uint256 _maxEngagementDays) external onlyOwner {
+        maxEngagementDays = _maxEngagementDays;
+    }
+
+    function set_smartContractLinkedAddressAPI(address _smartContractLinkedAddressAPI) external onlyOwner {
+        smartContractLinkedAddressAPI = _smartContractLinkedAddressAPI;
     }
 }
