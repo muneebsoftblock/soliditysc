@@ -157,31 +157,31 @@ contract("Staking", (accounts) => {
 
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
 
-    // it("should get user rewards", async () => {
-    //     await erc20.approve(staking.address, ether("100"), { from: user1 })
+    it("should get user rewards", async () => {
+        await erc20.approve(staking.address, ether("100"), { from: user1 })
 
-    //     const erc721Ids = [1, 2, 3]
-    //     await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        const erc721Ids = [1, 2, 3]
+        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
 
-    //     await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+        await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
 
-    //     // Fast forward 30 days to make sure the staking period has passed
-    //     await time.increase(time.duration.days(30))
+        // Fast forward 30 days to make sure the staking period has passed
+        await time.increase(time.duration.days(30))
 
-    //     const userRewards = await staking.getUserRewards(user1, "100", "100")
+        const userRewards = await staking.getUserRewards(user1, "50", "100")
 
-    //     console.log("User Rewards:", userRewards.toString())
+        console.log("User Rewards:", userRewards.toString())
 
-    //     const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
-    //     const totalStaked = await staking.totalStaked()
+        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
+        const totalStaked = await staking.totalStakedLazi()
 
-    //     if (totalStaked.isZero()) {
-    //         console.log("No tokens staked.")
-    //     } else {
-    //         const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
-    //         console.log("APR = " + APR.toNumber() + "%")
-    //     }
-    // })
+        if (totalStaked.isZero()) {
+            console.log("No tokens staked.")
+        } else {
+            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
+            console.log("APR = " + APR.toNumber() + "%")
+        }
+    })
 
     it("should distribute rewards correctly after one day", async () => {
         // User A stakes
