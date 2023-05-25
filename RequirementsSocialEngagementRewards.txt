@@ -1,0 +1,61 @@
+This is how the rewards mechanism will work. To participate in engage to earn, a user needs to start an “engagement session”. An engagement session can be started by a user by staking $LAZI for the duration of time for which they wish to participate in the engagement mining of $LAZI. 
+Highest duration of engagement session could not me more than 2000 days
+MULTIPLIER:
+A user can add a multiplier for his/her engagement rewards by referring to the following formula:
+Multiplier = S*T*U,
+Where, S = max {user’s staked $LAZI/ mean $LAZI staked, 1}
+	T = max {user’s stake duration/ mean duration of stake,1}
+	U => username multiplier. Users get a multiplier for owing upto 5 .LAZI usernames. The multipliers will be as follows:
+
+
+Usernames used for obtaining a multiplier will be staked as well and will only be unstaked at the end of the engagement session. 
+A multiplier only gets added if the value of (S*T*U) > 1. Otherwise a default multiplier of 1 will be added to the user’s engagement session.
+
+ENGAGEMENT MINNIG:
+	Rewards for engagement mining = w1*Contribution score + w*2 Duration + w3*Staked amount
+W1, w2 and w3 are specific weights attached to specific factors of engagement mining and are the proportions in which the daily tokens minted will be distributed. 
+Initially, these weights will be kept as w1 = 60%, w2 = 25% and w3 = 15%. These weights can be changed as the project moves along to optimise for maximum good of the platform. 
+
+	Contribution score:
+Contribution score is a calculated as a User’s contribution to the social media. It is based on the following factors:
+Content creation: frequency and quality of content creation inside the app
+Interactions with other users
+NFT-related activities: This will include buying/selling of new posts inside the app
+Network growth: This will include inviting new users to the app or encouraging new users by liking/commenting/buying their posts
+Platform support: maintaining a good behaviour, and reporting to community for bad behaviour
+The specific weights of the factors inside contribution score are not disclosed so that users cant game the system to their advantage by engaging in bad behaviour such as wash trading etc. 
+Duration:
+Duration simply means user’s duration for engagement session/total duration of all the engagement sessions
+Stake amount:
+This means a user’s staked amount/total staked amount. 
+
+LEADERBOARD:
+10% of tokens minted everyday will be kept aside for users winning the leader boards every day. 50% of these tokens will be given to the user with top contribution score for the day and 25% each will be given to users with top NFT related activities and network growth
+
+For developers:
+	Contribution score metrics and data to measure:
+Content creation (20%): • Frequency of content creation: 10% • Quality of content (likes, comments, shares): 10%
+Interactions with other users (15%): • Number of comments: 7.5% • Number of likes and reactions: 7.5%
+NFT-related activities (30%): • Number of NFTs created: 10% • NFT sales volume: 10% • Number of NFTs purchased: 10%
+Network growth (25%): • Inviting new users: 12.5% • Encouraging new users (likes, comments, purchases): 12.5%
+Platform support (10%): • Maintaining good behavior: 5% • Reporting bad behavior: 5%
+This revised distribution places a higher weight on NFT-related activities and network growth, as requested.
+To track the data for these factors, you can use the following methods:
+Content creation: • Frequency of content creation: Track the number of posts a user creates through platform APIs or the backend database. • Quality of content: Collect data on user-generated content's engagement metrics (likes, comments, shares) via platform APIs or the backend database.
+Interactions with other users: • Number of comments: Monitor the number of comments a user makes on other users' content through platform APIs or the backend database. • Number of likes and reactions: Track the total number of likes and reactions a user gives to other users' content via platform APIs or the backend database.
+NFT-related activities: • Number of created NFTs: Track the number of NFTs a user creates on the platform through APIs or the backend database. • NFT sales volume: Monitor the total value of NFTs sold by a user using APIs or the backend database. • Number of NFTs purchased: Count the total number of NFTs bought by a user through APIs or the backend database.
+Network growth: • Inviting new users: Monitor the number of successful invites a user has sent using referral codes, invitation links, or a dedicated invite system. • Encouraging new users: Track a user's engagement with new users' content (likes, comments, purchases) through platform APIs or the backend database.
+Platform support: • Maintaining good behavior: Monitor user behavior through moderation logs or user reports. • Reporting bad behavior: Count the number of times a user has reported inappropriate content or behavior through a reporting system or the backend database.
+
+PENALTIES FOR EARLY ENGAGMENT SESSION END:
+If a user decides to end their session earlier than what they had set it for, they can do that but it will incur penalties on their staked amount and rewards. The penalties are as follows:
+If engagement session ended before 50% of the duration set initially: 
+Earned rewards: 50%
+Initial staked amount: 30%
+If engagement session ended between 50% to 80% of duration set initially:
+Earned rewards: 25%
+Initial staked amount: 15%
+If engagement session ended after 80% of the duration set initially:
+Earned rewards: 15%
+Initial staked amount: 5%
+Half of this penalty goes to the creator wallet and the other half gets added to the reward amount for the next day and is distributed amongst the engagement miners accordingly.
