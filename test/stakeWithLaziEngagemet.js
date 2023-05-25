@@ -24,9 +24,9 @@ contract("Staking", (accounts) => {
         staking = await Staking.new(erc20.address, erc721.address, { from: owner })
         await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
 
-        await erc20.mint(user1, ether("5000"), { from: owner })
+        await erc20.mint(user1, ether("100"), { from: owner })
         await erc20.mint(user2, ether("5000"), { from: owner })
-        await erc20.mint(staking.address, ether("200000000"), { from: owner })
+        // await erc20.mint(staking.address, ether("200000000"), { from: owner })
 
         await erc721.airdrop([user1, user1, user1], ["1 one", "2 two", "3 three"], { from: owner })
         await erc721.airdrop([user2, user2, user2, user2, user2], ["4 f", "5 f", "6 s", "7 s", "8 e"], { from: owner })
@@ -49,19 +49,20 @@ contract("Staking", (accounts) => {
     it("should allow users to unstake and claim rewards", async () => {
         // Approve and stake tokens
         const stakedLazi = ether("100")
-        const stakeDuration = 30
+        const stakeDuration = 15 * 86400
         const erc721TokenId = 1
         await erc20.approve(staking.address, stakedLazi, { from: user1 })
         await erc721.approve(staking.address, erc721TokenId, { from: user1 })
         await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], { from: user1 })
 
         // Fast-forward time to complete the stake duration
-        await time.increase(time.duration.days(stakeDuration))
+        const unstakeAtDays = 100
+        await time.increase(time.duration.days(unstakeAtDays))
 
         // Unstake and claim rewards
         const publicKey = "0xCb1345D9bb0658d8424Bb092C62795204E3994Fd"
         const privateKey = "dfbeda793c0d2bebee953029221fcc5a7c2cfa38403a27ad0fe0cf399cba9fc4"
-        const contributionWeighted = "15"
+        const contributionWeighted = "100"
         const totalWeightedContribution = "100"
         const timestamp = Date.now().toString()
         const messagePacked = web3.eth.abi.encodeParameters(
@@ -86,18 +87,18 @@ contract("Staking", (accounts) => {
             }
     */
 
+        // Check user balance after un staking
+        const userBalance = await erc20.balanceOf(user1)
+        // expect(userBalance).to.be.bignumber.equal("67230000000000000000000")
+        expect(userBalance).to.be.bignumber.equal(stakedLazi)
 
-        // Check user balance after unstaking
-        // const userBalance = await erc20.balanceOf(accounts[0])
-        // expect(userBalance).to.be.bignumber.equal(stakedLazi)
+        // Check contract balance after un staking
+        const contractBalance = await erc20.balanceOf(staking.address)
+        expect(contractBalance).to.be.bignumber.equal(ether("0"))
 
-        // // Check contract balance after unstaking
-        // const contractBalance = await erc20.balanceOf(staking.address)
-        // expect(contractBalance).to.be.bignumber.equal(ether("0"))
-
-        // // Check ERC721 token ownership after unstaking
-        // const ownerOfERC721 = await erc721.ownerOf(erc721TokenId)
-        // expect(ownerOfERC721).to.equal(accounts[0])
+        // Check ERC721 token ownership after un staking
+        const ownerOfERC721 = await erc721.ownerOf(erc721TokenId)
+        expect(ownerOfERC721).to.equal(user1)
     })
 
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
@@ -108,7 +109,9 @@ contract("Staking", (accounts) => {
     //     const erc721Ids = [1, 2, 3]
     //     await erc721.setApprovalForAll(staking.address, true, { from: user1 })
 
-    //     await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
+    //     await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], { from: user1 })
+
+    //     await staking.stake(ether("100"), 30 * 86400, erc721Ids, { from: user1 })
 
     //     // Fast forward 30 days to make sure the staking period has passed
     //     await time.increase(time.duration.days(30))
