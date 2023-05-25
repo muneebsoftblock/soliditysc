@@ -1,7 +1,3 @@
-//Todo signer verify on contribution score
-//Backend API
-// penalty softcode
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
@@ -32,6 +28,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     LAZI public laziToken;
     IERC721 public erc721Token;
 
+    /// @notice admin can change these weights depending on the project situation
+    uint256 public w1 = 50;
+    uint256 public w2 = 35;
+    uint256 public w3 = 15;
+    
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256 public maxEngagementDays = 2000 days;
@@ -55,10 +56,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public totalWeightedStakedLazi;
     uint256 public totalWeightedStakedDuration;
 
-    /// @notice admin can change these weights depending on the project situation
-    uint256 public w1 = 60;
-    uint256 public w2 = 25;
-    uint256 public w3 = 15;
 
     uint256 public PENALTY_POOL;
     uint256[] public multiplierValues;
