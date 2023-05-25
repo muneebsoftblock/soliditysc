@@ -76,7 +76,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     /**
     @notice Contract constructor
     @param _laziToken The LAZI token contract address
-    @param _erc721Token The ERC721 token contract address
+    @param _laziName The ERC721 token contract address
     */
     constructor(address _laziToken, address _laziName) {
         laziToken = LAZI(_laziToken);
