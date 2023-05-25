@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /**
@@ -23,6 +24,8 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 Users can stake their tokens for a specified duration and earn rewards based on the staked amount, duration, and the number of staked ERC721 tokens.
 */
 contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
+    using ECDSA for bytes32;
+
     address public trustedAddress = 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd;
     mapping(bytes32 => bool) public processedValues;
 
@@ -127,13 +130,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 timestamp,
         bytes memory _signature
     ) external nonReentrant {
+        bytes32 message = keccak256(abi.encodePacked(contributionWeighted, totalWeightedContribution, timestamp));
+        require(trustedAddress == message.toEthSignedMessageHash().recover(_signature), "Invalid Signature!");
+
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         _signatureUsed[_signature] = true;
-        string memory message = string(abi.encodePacked(toString(contributionWeighted), toString(totalWeightedContribution), toString(timestamp)));
-        bytes32 _messageHash = messageHash(message);
-        bytes32 _signedMessageHash = getEthSignedMessageHash(_messageHash);
-        address recoveredA = verifySignature(_signedMessageHash, _signature);
-        require(recoveredA == 0xCb1345D9bb0658d8424Bb092C62795204E3994Fd, "Invalid Signature!");
 
         User storage user = users[msg.sender];
         require(user.stakedLazi > 0, "No stake to unstake");
@@ -173,89 +174,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         emit RewardsClaimed(msg.sender, reward - rewardPenalty);
         emit Unstaked(msg.sender, user.stakedLazi, user.erc721TokenIds);
         delete users[msg.sender];
-    }
-
-    function toString(uint256 value) public pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-
-        uint256 temp = value;
-        uint256 digits;
-
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-
-        bytes memory buffer = new bytes(digits);
-
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-
-        return string(buffer);
-    }
-
-    // function verify(
-    //     uint256 contributionWeighted,
-    //     uint256 totalWeightedContribution,
-    //     uint256 timestamp,
-    //     bytes memory _signature) public pure returns (address) {
-    //     string memory message = string(
-    //         abi.encodePacked(
-    //             toString(contributionWeighted),
-    //             toString(totalWeightedContribution),
-    //             toString(timestamp)
-    //         )
-    //     );
-    //     bytes32 _messageHash = messageHash(message);
-    //     bytes32 _signedMessageHash = getEthSignedMessageHash(_messageHash);
-    //     address user = verifySignature(_signedMessageHash, _signature);
-    //     return  user;
-
-    // }
-
-    function messageHash(string memory _message) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
-    }
-
-    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
-        /*
-        Signature is produced by signing a keccak256 hash with the following format:
-        "\x19Ethereum Signed Message\n" + len(msg) + msg
-        */
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
-    }
-
-    function verifySignature(bytes32 _messageHash, bytes memory _signature) public pure returns (address) {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // Check the signature length
-        require(_signature.length == 65, "Invalid signature length");
-
-        // Divide the signature into its three components
-        assembly {
-            r := mload(add(_signature, 32))
-            s := mload(add(_signature, 64))
-            v := and(mload(add(_signature, 65)), 255)
-        }
-
-        // Ensure the validity of v
-        if (v < 27) {
-            v += 27;
-        }
-        require(v == 27 || v == 28, "Invalid signature v value");
-
-        // Recover the signer's address
-        address signer = ecrecover(_messageHash, v, r, s);
-        require(signer != address(0), "Invalid signature");
-
-        return signer;
     }
 
     /**
