@@ -53,7 +53,6 @@ contract("Staking", (accounts) => {
         const erc721TokenId = 1
         await erc20.approve(staking.address, stakedLazi, { from: user1 })
         await erc721.approve(staking.address, erc721TokenId, { from: user1 })
-        // await staking.set_trustedAddress(accounts[3])
         await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], { from: user1 })
 
         // Fast-forward time to complete the stake duration
@@ -65,16 +64,16 @@ contract("Staking", (accounts) => {
         const contributionWeighted = "15"
         const totalWeightedContribution = "100"
         const timestamp = Date.now().toString()
-        // const message = "15" + "100" + timestamp
         const messagePacked = web3.eth.abi.encodeParameters(
             ["uint256", "uint256", "uint256"],
             [contributionWeighted, totalWeightedContribution, timestamp]
         )
-        // const signature = await signMessageHash(web3, [contributionWeighted, totalWeightedContribution, timestamp]);
         const message = web3.utils.keccak256(messagePacked)
         const signature = web3.eth.accounts.sign(message, privateKey)
-        const recoveredAddress = web3.eth.accounts.recover(message, signature.signature)
+        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature.signature, { from: user1 })
 
+        // doing same thing of smart contract in javascript
+        const recoveredAddress = web3.eth.accounts.recover(message, signature.signature)
         console.log({ publicKey, recoveredAddress })
         /*
             signature!  {
@@ -87,8 +86,6 @@ contract("Staking", (accounts) => {
             }
     */
 
-        console.log("trustedAddress " + (await staking.trustedAddress()))
-        await staking.unstake(contributionWeighted, totalWeightedContribution, timestamp, signature.signature, { from: user1 })
 
         // Check user balance after unstaking
         // const userBalance = await erc20.balanceOf(accounts[0])
