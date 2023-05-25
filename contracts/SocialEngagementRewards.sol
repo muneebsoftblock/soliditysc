@@ -236,6 +236,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      */
 
     function getUserRewards(address _user, uint256 contributionWeighted, uint256 totalWeightedContribution) public view returns (uint256) {
+        require(contributionWeighted <= totalWeightedContribution, "Incorrect Values for contribution score");
         User storage user = users[_user];
         uint checkPoint = Math.min(block.timestamp, REWARD_STOP_TIME);
 
