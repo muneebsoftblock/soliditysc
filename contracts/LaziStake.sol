@@ -175,6 +175,41 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         updateDistributions(lockPeriodInDays, erc20Amount, 0);
     }
 
+    function flexibleStake(
+        uint256 additionalErc20Amount,
+        uint256 additionalLockPeriodInDays,
+        uint256[] calldata additionalErc721TokenIds
+    ) external  {
+        StakeInfo storage stakeInfo = stakes[msg.sender];
+        require(stakeInfo.stakingAmount > 0, "No stake found");
+
+        uint256 additionalLockPeriod = additionalLockPeriodInDays * 1 days;
+        uint256 numAdditionalErc721Tokens = additionalErc721TokenIds.length;
+        uint256 additionalMultiplier = _getMultiplier(numAdditionalErc721Tokens, additionalLockPeriodInDays);
+        uint256 additionalWeightedStake = (additionalErc20Amount * additionalMultiplier) / 100;
+
+        // Transfer additional staked tokens to the contract
+        stakingToken.transferFrom(msg.sender, address(this), additionalErc20Amount);
+
+        for (uint256 i = 0; i < numAdditionalErc721Tokens; i++) {
+            erc721.safeTransferFrom(msg.sender, address(this), additionalErc721TokenIds[i]);
+        }
+
+        // Update stake information
+        stakeInfo.lockPeriod += additionalLockPeriod;
+        stakeInfo.stakingAmount += additionalErc20Amount;
+        stakeInfo.weightedStake += additionalWeightedStake;
+        for (uint256 i = 0; i < numAdditionalErc721Tokens; i++) {
+            stakeInfo.stakedTokenIds.push(additionalErc721TokenIds[i]);
+        }
+
+        totalStaked += additionalErc20Amount;
+        totalWeightedStake += additionalWeightedStake;
+
+        uint256 totalLockPeriodInDays = stakeInfo.lockPeriod / 1 days;
+        updateDistributions(totalLockPeriodInDays, additionalErc20Amount, 0);
+    }
+
     function updateDistributions(uint256 daysToStake, uint256 erc20Amount, uint256 rewards) private {
         lockPeriodDistribution[daysToStake] += 1;
         stakedTokensDistribution[daysToStake] += erc20Amount;
