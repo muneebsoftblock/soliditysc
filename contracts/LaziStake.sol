@@ -29,6 +29,10 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 weightedStake;
         uint256 claimedRewards;
     }
+    enum StakeOption {
+        FlexibleStake,
+        LockedStake
+    }
 
     IERC20 public stakingToken;
     LAZI public rewardToken;
@@ -40,6 +44,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
     mapping(address => uint256) public lastCompoundingTime;
+    mapping(address => StakeOption) public stakeOption;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
@@ -182,9 +187,12 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         emit RewardsCompounded(msg.sender, additionalRewards);
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external nonReentrant {
+    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds, uint8 stakeOption) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
+        require(stakeOption == uint8(StakeOption.FlexibleStake) || stakeOption == uint8(StakeOption.LockedStake), "Invalid stake option");
+        // Set the stake option for the user
+        stakeOption[msg.sender] = StakeOption(stakeOption);
 
         uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
@@ -216,6 +224,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     function flexibleStake(uint256 additionalErc20Amount, uint256 additionalLockPeriodInDays, uint256[] calldata additionalErc721TokenIds) external {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
+        require(stakeOption[msg.sender] == StakeOption.flexibleStake, "Not allowed for lockedStake");
 
         uint256 additionalLockPeriod = additionalLockPeriodInDays * 1 days;
         uint256 numAdditionalErc721Tokens = additionalErc721TokenIds.length;
