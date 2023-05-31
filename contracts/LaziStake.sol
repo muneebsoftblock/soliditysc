@@ -11,11 +11,13 @@ pragma solidity ^0.8.0;
 
 import "./LaziToken.sol";
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
@@ -37,12 +39,15 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public lockPeriodDistribution;
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
+    mapping(address => uint256) public lastCompoundingTime;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
     uint256[] public lockPeriods;
     mapping(uint256 => uint256) public lockPeriodMultipliers;
     uint256[] public erc721Multipliers;
+
+    event RewardsCompounded(address indexed staker, uint256 rewards);
 
     constructor(
         IERC20 _stakingToken,
@@ -58,6 +63,12 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         setLockPeriods(lockPeriodsInput);
         setLockPeriodMultipliers(lockPeriodMultipliersInput);
         setERC721Multipliers(erc721MultipliersInput);
+    }
+
+    //modifiers
+    modifier canAutoCompound(address staker) {
+        require(block.timestamp >= lastCompoundingTime[staker] + 3 minutes, "Auto-compounding not available yet");
+        _;
     }
 
     function setLockPeriods(uint256[] memory periods) public onlyOwner {
@@ -123,10 +134,12 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         uint256 rewardAmount = getUserRewards(msg.sender);
         require(rewardAmount > 0, "No rewards to harvest");
+        lastCompoundingTime[msg.sender] = block.timestamp;
 
         _mintRewardTokens(msg.sender, rewardAmount);
         stakeInfo.claimedRewards += rewardAmount;
         updateDistributions(0, 0, rewardAmount);
+        // Update the last compounding time
     }
 
     function withdrawERC20(address _erc20) external onlyOwner {
@@ -144,6 +157,29 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
         uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_DAY) / (1 days * totalWeightedStake);
         return rewardAmount - stakeInfo.claimedRewards;
+    }
+
+    function compoundRewards() external canAutoCompound(msg.sender) {
+        StakeInfo storage stakeInfo = stakes[msg.sender];
+
+        // Calculate the amount of rewards to compound
+        uint256 additionalRewards = getUserRewards(msg.sender);
+        require(additionalRewards > 0, "No rewards to compound");
+
+        // Transfer the additional rewards to the staking contract
+        rewardToken.transferFrom(msg.sender, address(this), additionalRewards);
+
+        // Update the stake information
+        stakeInfo.claimedRewards += additionalRewards;
+
+        // Update the last compounding time
+        lastCompoundingTime[msg.sender] = block.timestamp;
+
+        // Call the private `_updateDistributions` function to update distributions
+        updateDistributions(stakeInfo.lockPeriod, 0, additionalRewards);
+
+        // Emit an event to notify the user
+        emit RewardsCompounded(msg.sender, additionalRewards);
     }
 
     function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external nonReentrant {
@@ -169,17 +205,15 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             weightedStake: weightedStake,
             claimedRewards: 0
         });
+        // Initialize the last compounding time
+        lastCompoundingTime[msg.sender] = block.timestamp;
 
         totalStaked += erc20Amount;
         totalWeightedStake += weightedStake;
         updateDistributions(lockPeriodInDays, erc20Amount, 0);
     }
 
-    function flexibleStake(
-        uint256 additionalErc20Amount,
-        uint256 additionalLockPeriodInDays,
-        uint256[] calldata additionalErc721TokenIds
-    ) external  {
+    function flexibleStake(uint256 additionalErc20Amount, uint256 additionalLockPeriodInDays, uint256[] calldata additionalErc721TokenIds) external {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
 
@@ -224,6 +258,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         returns (uint256[] memory lockPeriodDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
     {
         uint256 length = daysToStake.length;
+        require(length > 0, "Empty array");
+
         lockPeriodDistributions = new uint256[](length);
         stakedTokenDistributions = new uint256[](length);
         rewardTokenDistributions = new uint256[](length);
