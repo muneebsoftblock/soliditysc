@@ -45,7 +45,7 @@ contract("Staking", (accounts) => {
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
         await erc721.setApprovalForAll(staking.address, true, { from: user2 })
-        const lockPeriodInDays = 30
+        const lockPeriodInDays = 30 * 86400
         await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
         await time.increase(time.duration.hours(1))
         await staking.stake(ether("100"), lockPeriodInDays, [4, 5, 6], { from: user2 })
@@ -71,7 +71,7 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodInDays = 30
+        const lockPeriodInDays = 30 * 86400
 
         await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
@@ -91,7 +91,7 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodInDays = 30
+        const lockPeriodInDays = 30 * 86400
 
         await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
@@ -111,7 +111,7 @@ contract("Staking", (accounts) => {
 
         const erc721Ids = [1, 2, 3]
         await erc721.setApprovalForAll(staking.address, true, { from: user1 })
-        const lockPeriodInDays = 30
+        const lockPeriodInDays = 30 * 86400
         await staking.stake(ether("100"), lockPeriodInDays, erc721Ids, { from: user1 })
 
         // Fast forward 30 days to make sure the staking period has passed
@@ -142,7 +142,7 @@ contract("Staking", (accounts) => {
         const userAStakeAmount = "25000" + "0".repeat(18)
         const userALockPeriod = 365 * 24 * 60 * 60
         const userAERC721TokenIds = [1, 2, 3]
-        const lockPeriodInDays = 30
+        const lockPeriodInDays = 30 * 86400
         await erc20.approve(staking.address, userAStakeAmount, { from: userA })
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
 

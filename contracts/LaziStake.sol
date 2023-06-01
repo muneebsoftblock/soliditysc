@@ -48,6 +48,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_SEC = 1.5856 * 1e18;
+    uint256 public MIN_LOCK_DURATION = 7 days;
 
     constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
@@ -122,6 +123,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     }
 
     function stake(uint256 erc20Amount, uint256 lockPeriod, uint256[] calldata erc721TokenIds) external nonReentrant {
+        require(lockPeriod == 0 || lockPeriod >= MIN_LOCK_DURATION, "stake for minimum lock period");
+
         StakeInfo storage stakeInfo = stakes[msg.sender];
 
         uint256 numErc721Tokens = erc721TokenIds.length;
@@ -152,11 +155,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     function getDistributions(
         uint256[] calldata timeToStake
-    )
-        external
-        view
-        returns (uint256[] memory txDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
-    {
+    ) external view returns (uint256[] memory txDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions) {
         uint256 length = timeToStake.length;
         txDistributions = new uint256[](length);
         stakedTokenDistributions = new uint256[](length);
@@ -184,5 +183,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     function set_multiplierIncrementLockPeriod(uint256 _multiplierIncrementLockPeriod) external onlyOwner {
         multiplierIncrementLockPeriod = _multiplierIncrementLockPeriod;
+    }
+
+    function set_MIN_LOCK_DURATION(uint256 _MIN_LOCK_DURATION) external onlyOwner {
+        MIN_LOCK_DURATION = _MIN_LOCK_DURATION;
     }
 }
