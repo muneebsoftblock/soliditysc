@@ -42,7 +42,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public totalStaked;
     uint256 public totalWeightedStake;
     mapping(address => StakeInfo) public stakes;
-    mapping(uint256 => uint256) public lockPeriodDistribution;
+    mapping(uint256 => uint256) public txDistribution;
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
 
@@ -82,7 +82,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
         rewardTokensDistribution[stakeInfo.lockPeriod] += rewardAmount;
-        lockPeriodDistribution[stakeInfo.lockPeriod]++;
+        txDistribution[stakeInfo.lockPeriod]++;
 
         totalWeightedStake -= stakeInfo.weightedStake;
         totalStaked -= stakeInfo.stakingAmount;
@@ -98,7 +98,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         stakeInfo.claimedRewards += rewardAmount;
 
         rewardTokensDistribution[stakeInfo.lockPeriod] += rewardAmount;
-        lockPeriodDistribution[stakeInfo.lockPeriod]++;
+        txDistribution[stakeInfo.lockPeriod]++;
     }
 
     function withdrawERC20(address _erc20) external onlyOwner {
@@ -146,7 +146,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         totalStaked += erc20Amount;
         totalWeightedStake += weightedStake;
 
-        lockPeriodDistribution[stakeInfo.lockPeriod]++;
+        txDistribution[stakeInfo.lockPeriod]++;
         stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
     }
 
@@ -155,16 +155,16 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     )
         external
         view
-        returns (uint256[] memory lockPeriodDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
+        returns (uint256[] memory txDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
     {
         uint256 length = timeToStake.length;
-        lockPeriodDistributions = new uint256[](length);
+        txDistributions = new uint256[](length);
         stakedTokenDistributions = new uint256[](length);
         rewardTokenDistributions = new uint256[](length);
 
         for (uint256 i = 0; i < length; i++) {
             uint256 time = timeToStake[i];
-            lockPeriodDistributions[i] = lockPeriodDistribution[time];
+            txDistributions[i] = txDistribution[time];
             stakedTokenDistributions[i] = stakedTokensDistribution[time];
             rewardTokenDistributions[i] = rewardTokensDistribution[time];
         }
