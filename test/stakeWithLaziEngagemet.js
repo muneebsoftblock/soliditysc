@@ -170,7 +170,7 @@ contract("Staking", (accounts) => {
 
         const userRewards = await staking.getUserRewards(user1, "50", "100")
 
-        console.log("User Rewards:", userRewards.toString())
+        console.log("User Rewards:", fromWei(userRewards.toString()))
 
         const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
         const totalStaked = await staking.totalStakedLazi()
@@ -218,9 +218,9 @@ contract("Staking", (accounts) => {
         const userBRewards = await staking.getUserRewards(userB, "50", "100")
         const totalRewards = userARewards.add(userBRewards)
 
-        console.log("User A rewards:", userARewards.toString())
-        console.log("User B rewards:", userBRewards.toString())
-        console.log("Total rewards:", totalRewards.toString())
+        console.log("User A rewards:", fromWei(userARewards.toString()))
+        console.log("User B rewards:", fromWei(userBRewards.toString()))
+        console.log("Total rewards:", fromWei(totalRewards.toString()))
 
         expect(totalRewards).to.be.bignumber.greaterThan(ether("137000"))
         expect(totalRewards).to.be.bignumber.lessThan(ether("137010"))
