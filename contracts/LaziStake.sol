@@ -167,8 +167,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         stakeInfo.lockPeriod += lockPeriod;
 
         // Check requirements for the lock period
-        require(stakeInfo.lockPeriod + lockPeriod <= MAX_LOCK_DURATION, "Can not stake more than maximum lock period");
-        require(lockPeriod == 0 || lockPeriod >= MIN_LOCK_DURATION, "Can not stake less than minimum lock period");
+        require(stakeInfo.lockPeriod + lockPeriod <= MAX_LOCK_DURATION, "Cannot stake more than maximum lock period");
+        require(lockPeriod == 0 || lockPeriod >= MIN_LOCK_DURATION, "Cannot stake less than minimum lock period");
 
         // Store the staked assets
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
@@ -178,25 +178,26 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         }
 
         // Perform calculations based on the lock period
+        uint256 weightedStake;
         if (lockPeriod == 0) {
             // Add assets to the same lock period
             uint256 multiplier = _getMultiplier(erc721TokenIds.length, lockPeriod); // Calculate the multiplier based on the number of ERC721 tokens and the lock period
-            uint256 weightedStake = (erc20Amount * multiplier) / 1e18; // Calculate the weighted stake by multiplying the ERC20 amount with the multiplier and dividing by 1e18
-            stakeInfo.weightedStake += weightedStake; // Add the weighted stake to the user's stakeInfo
-            totalWeightedStake += weightedStake; // Add the weighted stake to the total weighted stake for all users
+            weightedStake = (erc20Amount * multiplier) / 1e18; // Calculate the weighted stake by multiplying the ERC20 amount with the multiplier and dividing by 1e18
         } else {
             // Renew the lock period
+            uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod); // Calculate the multiplier based on the number of staked tokens and the lock period
+            weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18; // Calculate the new weighted stake by multiplying the staking amount with the multiplier and dividing by 1e18
+
             stakeInfo.stakeStartTime = block.timestamp; // Set the stake start time to the current block timestamp
             totalWeightedStake -= stakeInfo.weightedStake; // Subtract the previous weighted stake from the total weighted stake
-            uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod); // Calculate the multiplier based on the number of staked tokens and the lock period
-            uint256 weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18; // Calculate the new weighted stake by multiplying the staking amount with the multiplier and dividing by 1e18
-            stakeInfo.weightedStake = weightedStake; // Update the weighted stake for the user in the stakeInfo storage
-            totalWeightedStake += weightedStake; // Add the new weighted stake to the total weighted stake
-
-            // Update staked tokens distribution and transaction distribution to show on UI
-            stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
-            txDistribution[stakeInfo.lockPeriod]++;
         }
+
+        stakeInfo.weightedStake = weightedStake; // Update the weighted stake for the user in the stakeInfo storage
+        totalWeightedStake += weightedStake; // Add the new weighted stake to the total weighted stake
+
+        // Update staked tokens distribution and transaction distribution to show on UI
+        stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
+        txDistribution[stakeInfo.lockPeriod]++;
 
         // Update the total staked amount
         totalStaked += erc20Amount;
