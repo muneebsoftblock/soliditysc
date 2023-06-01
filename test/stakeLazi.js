@@ -121,33 +121,19 @@ contract("Staking", (accounts) => {
 
         console.log("User Rewards:", fromWei(userRewards.toString()))
 
-        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
+        const REWARD_PER_SEC = await staking.REWARD_PER_SEC()
         const totalStaked = await staking.totalStaked()
 
         if (totalStaked.isZero()) {
             console.log("No tokens staked.")
         } else {
-            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
+            const APR = REWARD_PER_SEC.muln(86400).muln(365).muln(100).div(totalStaked)
             console.log("APR = " + APR.toNumber() + "%")
         }
 
         const daysToStake = [0, 30, 60, 90, 180, 365]
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
-    })
-
-    it("should get current APR", async () => {
-        // console.log("APR = " + await staking.REWARD_PER_DAY() * 365 * 100 / await staking.totalStaked()  + "%");
-
-        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
-        const totalStaked = await staking.totalStaked()
-
-        if (totalStaked.isZero()) {
-            console.log("No tokens staked.")
-        } else {
-            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
-            console.log("APR = " + APR.toNumber() + "%")
-        }
     })
 
     it("should distribute rewards correctly after one day", async () => {
@@ -192,6 +178,8 @@ contract("Staking", (accounts) => {
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
         console.log("total reward! ", fromWei(totalRewards.toString()))
-        assert(fromWei(totalRewards.toString()).includes("13700"), "Total rewards should be 137,000 tokens")
+        // assert(fromWei(totalRewards.toString()).includes("13700"), "Total rewards should be 137,000 tokens")
+        expect(totalRewards).to.be.bignumber.greaterThan(ether("136000"))
+        expect(totalRewards).to.be.bignumber.lessThan(ether("138000"))
     })
 })

@@ -37,7 +37,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     IERC721 public erc721;
 
     uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // multipliers as 1x, 1.4x, 1.8x, 2.2x, 2.8x, ...
-    uint256 private multiplierIncrementLockPeriod = 0.4 * 1e18;
+    uint256 private multiplierIncrementLockPeriod = 0.00000066 * 1e18;
 
     uint256 public totalStaked;
     uint256 public totalWeightedStake;
@@ -47,13 +47,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public rewardTokensDistribution;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_DAY = 137_000 ether;
+    uint256 public REWARD_PER_SEC = 1.5856 * 1e18;
 
-    constructor(
-        IERC20 _stakingToken,
-        LAZI _rewardToken,
-        IERC721 _erc721
-    ) {
+    constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
         erc721 = _erc721;
@@ -84,7 +80,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             erc721.safeTransferFrom(address(this), msg.sender, stakeInfo.stakedTokenIds[i]);
         }
 
-        uint256 daysToStake = stakeInfo.lockPeriod / 1 days;
+        uint256 daysToStake = stakeInfo.lockPeriod;
         updateDistributions(daysToStake, 0, rewardAmount);
 
         totalWeightedStake -= stakeInfo.weightedStake;
@@ -115,19 +111,18 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         if (checkPoint <= stakeInfo.stakeStartTime || totalWeightedStake == 0) return 0;
 
         uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
-        uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_DAY) / (1 days * totalWeightedStake);
+        uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_SEC) / totalWeightedStake;
 
         if (rewardAmount <= stakeInfo.claimedRewards) return 0;
 
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds) external nonReentrant {
+    function stake(uint256 erc20Amount, uint256 lockPeriod, uint256[] calldata erc721TokenIds) external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
 
-        uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
-        uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriodInDays);
+        uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriod);
         uint256 weightedStake = (erc20Amount * multiplier) / 1e18;
 
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
@@ -144,7 +139,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         totalStaked += erc20Amount;
         totalWeightedStake += weightedStake;
-        updateDistributions(lockPeriodInDays, erc20Amount, 0);
+        updateDistributions(lockPeriod, erc20Amount, 0);
     }
 
     function updateDistributions(uint256 daysToStake, uint256 erc20Amount, uint256 rewards) private {
@@ -154,27 +149,27 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     }
 
     function getDistributions(
-        uint256[] calldata daysToStake
+        uint256[] calldata timeToStake
     )
         external
         view
         returns (uint256[] memory lockPeriodDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions)
     {
-        uint256 length = daysToStake.length;
+        uint256 length = timeToStake.length;
         lockPeriodDistributions = new uint256[](length);
         stakedTokenDistributions = new uint256[](length);
         rewardTokenDistributions = new uint256[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            uint256 day = daysToStake[i];
-            lockPeriodDistributions[i] = lockPeriodDistribution[day];
-            stakedTokenDistributions[i] = stakedTokensDistribution[day];
-            rewardTokenDistributions[i] = rewardTokensDistribution[day];
+            uint256 time = timeToStake[i];
+            lockPeriodDistributions[i] = lockPeriodDistribution[time];
+            stakedTokenDistributions[i] = stakedTokensDistribution[time];
+            rewardTokenDistributions[i] = rewardTokensDistribution[time];
         }
     }
 
-    function set_REWARD_PER_DAY(uint256 _REWARD_PER_DAY) external onlyOwner {
-        REWARD_PER_DAY = _REWARD_PER_DAY;
+    function set_REWARD_PER_SEC(uint256 _REWARD_PER_SEC) external onlyOwner {
+        REWARD_PER_SEC = _REWARD_PER_SEC;
     }
 
     function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
