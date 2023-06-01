@@ -57,7 +57,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     mapping(address => User) public users;
 
-    uint256 public totalUsers;
+    uint256 public totalTx;
 
     uint256 public totalStakedLazi;
     uint256 public totalStakedDuration;
@@ -97,7 +97,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     */
     function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external nonReentrant {
         User storage user = users[msg.sender];
-        require(user.stakedLazi == 0, "Unstake first to stake again");
         require(_stakedLazi > 0, "Staking amount must be greater than 0");
         require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
 
@@ -105,20 +104,20 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
         for (uint256 i = 0; i < _laziUsernameIds.length; i++) {
             erc721Token.transferFrom(msg.sender, address(this), _laziUsernameIds[i]);
+            user.erc721TokenIds.push(_laziUsernameIds[i]);
         }
 
-        user.stakedLazi = _stakedLazi;
-        user.stakeDuration = _stakeDuration;
+        user.stakedLazi += _stakedLazi;
+        user.stakeDuration += _stakeDuration;
         user.stakeStartTime = block.timestamp;
-        user.erc721TokenIds = _laziUsernameIds;
 
         totalStakedLazi += _stakedLazi;
         totalStakedDuration += _stakeDuration;
-        totalUsers += 1;
+        totalTx += 1;
 
         uint256 multiplier = getMultiplier(user);
-        user.stakedLaziWeighted = (_stakedLazi * multiplier) / 1e18;
-        user.stakeDurationWeighted = (_stakeDuration * multiplier) / 1e18;
+        user.stakedLaziWeighted += (_stakedLazi * multiplier) / 1e18;
+        user.stakeDurationWeighted += (_stakeDuration * multiplier) / 1e18;
         totalWeightedStakedLazi += user.stakedLaziWeighted;
         totalWeightedStakedDuration += user.stakeDurationWeighted;
 
@@ -175,7 +174,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         totalStakedDuration -= user.stakeDuration;
         totalWeightedStakedLazi -= user.stakedLaziWeighted;
         totalWeightedStakedDuration -= user.stakeDurationWeighted;
-        totalUsers -= 1;
+        totalTx -= 1;
 
         emit RewardsClaimed(msg.sender, reward - rewardPenalty);
         emit Unstaked(msg.sender, user.stakedLazi, user.erc721TokenIds);
