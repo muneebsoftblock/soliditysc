@@ -80,8 +80,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             erc721.safeTransferFrom(address(this), msg.sender, stakeInfo.stakedTokenIds[i]);
         }
 
-        uint256 daysToStake = stakeInfo.lockPeriod;
-        updateDistributions(daysToStake, 0, rewardAmount);
+        stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
+        rewardTokensDistribution[stakeInfo.lockPeriod] += rewardAmount;
+        lockPeriodDistribution[stakeInfo.lockPeriod]++;
 
         totalWeightedStake -= stakeInfo.weightedStake;
         totalStaked -= stakeInfo.stakingAmount;
@@ -95,7 +96,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         _mintRewardTokens(msg.sender, rewardAmount);
         stakeInfo.claimedRewards += rewardAmount;
-        updateDistributions(0, 0, rewardAmount);
+
+        rewardTokensDistribution[stakeInfo.lockPeriod] += rewardAmount;
+        lockPeriodDistribution[stakeInfo.lockPeriod]++;
     }
 
     function withdrawERC20(address _erc20) external onlyOwner {
@@ -132,6 +135,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             stakeInfo.stakedTokenIds.push(erc721TokenIds[i]);
         }
 
+        if (stakedTokensDistribution[stakeInfo.lockPeriod] >= stakeInfo.stakingAmount)
+            stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
+
         stakeInfo.stakeStartTime = block.timestamp;
         stakeInfo.stakingAmount += erc20Amount;
         stakeInfo.weightedStake += weightedStake;
@@ -139,13 +145,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         totalStaked += erc20Amount;
         totalWeightedStake += weightedStake;
-        updateDistributions(lockPeriod, erc20Amount, 0);
-    }
 
-    function updateDistributions(uint256 daysToStake, uint256 erc20Amount, uint256 rewards) private {
-        lockPeriodDistribution[daysToStake] += 1;
-        stakedTokensDistribution[daysToStake] += erc20Amount;
-        rewardTokensDistribution[daysToStake] += rewards;
+        lockPeriodDistribution[stakeInfo.lockPeriod]++;
+        stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
     }
 
     function getDistributions(
