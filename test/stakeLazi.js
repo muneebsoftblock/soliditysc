@@ -22,11 +22,8 @@
 //     beforeEach(async () => {
 //         erc20 = await ERC20.new({ from: owner })
 //         erc721 = await ERC721.new({ from: owner })
-//         const lockPeriodsInput = [0, 30, 60, 90, 180]
-//         const erc721MultipliersInput = [100, 125, 150, 175, 200]
-//         const lockPeriodMultipliers = [100, 125, 150, 175, 200]
 
-//         staking = await Staking.new(erc20.address, erc20.address, erc721.address, lockPeriodsInput, lockPeriodMultipliers, erc721MultipliersInput, {
+//         staking = await Staking.new(erc20.address, erc20.address, erc721.address, {
 //             from: owner,
 //         })
 //         await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })

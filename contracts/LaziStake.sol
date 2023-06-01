@@ -5,6 +5,10 @@
  * @notice A staking contract that allows users to stake ERC20 tokens along with ERC721 tokens to earn rewards.
  * Users can stake their tokens for a specified lock period and earn rewards based on the staked amount and the number of staked ERC721 tokens.
  * The contract also provides functions to unstake tokens, harvest rewards, and view distributions for different lock periods.
+ * Maths explanation:
+    example 2 * 1.5 = 3, but to do this on solidity we have to do (2 * (1.5 * 1e18)) / 1e18
+    we use 1e18 style to preserve decimal values. 1.5 can not be stores in uint256 so use it as 1.5 * 1e18
+    1e18 must remain in multiplier. when multiplier is multiplied with desired value. then divide 1e18 with desired value to remove it 
  */
 
 pragma solidity ^0.8.0;
@@ -31,6 +35,10 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     IERC20 public stakingToken;
     LAZI public rewardToken;
     IERC721 public erc721;
+
+    uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // multipliers as 1x, 1.4x, 1.8x, 2.2x, 2.8x, ...
+    uint256 private multiplierIncrementLockPeriod = 0.4 * 1e18;
+
     uint256 public totalStaked;
     uint256 public totalWeightedStake;
     mapping(address => StakeInfo) public stakes;
@@ -40,58 +48,23 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
-    uint256[] public lockPeriods;
-    mapping(uint256 => uint256) public lockPeriodMultipliers;
-    uint256[] public erc721Multipliers;
 
     constructor(
         IERC20 _stakingToken,
         LAZI _rewardToken,
-        IERC721 _erc721,
-        uint256[] memory lockPeriodsInput,
-        uint256[] memory lockPeriodMultipliersInput,
-        uint256[] memory erc721MultipliersInput
+        IERC721 _erc721
     ) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
         erc721 = _erc721;
-        setLockPeriods(lockPeriodsInput);
-        setLockPeriodMultipliers(lockPeriodMultipliersInput);
-        setERC721Multipliers(erc721MultipliersInput);
-    }
-
-    function setLockPeriods(uint256[] memory periods) public onlyOwner {
-        require(periods.length > 0, "At least one lock period must be provided");
-        lockPeriods = periods;
-    }
-
-    function setLockPeriodMultipliers(uint256[] memory multipliers) public onlyOwner {
-        require(multipliers.length > 0, "At least one lock period multiplier must be provided");
-        require(multipliers.length == lockPeriods.length, "Number of lock period multipliers must match the number of lock periods");
-        for (uint256 i = 0; i < multipliers.length; i++) {
-            lockPeriodMultipliers[lockPeriods[i]] = multipliers[i];
-        }
-    }
-
-    function setERC721Multipliers(uint256[] memory multipliers) public onlyOwner {
-        require(multipliers.length > 0, "At least one ERC721 multiplier must be provided");
-        erc721Multipliers = multipliers;
-    }
-
-    function getERC721Multiplier(uint256 erc721Tokens) private view returns (uint256) {
-        // Get the ERC721 multiplier based on the number of staked ERC721 tokens
-        if (erc721Tokens >= erc721Multipliers.length) {
-            return erc721Multipliers[erc721Multipliers.length - 1];
-        }
-        return erc721Multipliers[erc721Tokens];
     }
 
     function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
-        uint256 lockPeriodMultiplier = lockPeriodMultipliers[lockPeriod];
+        uint256 lockPeriodMultiplier = 1 * 1e18 + lockPeriod * multiplierIncrementLockPeriod;
 
-        uint256 erc721Multiplier = getERC721Multiplier(erc721Tokens);
+        uint256 erc721Multiplier = 1 * 1e18 + erc721Tokens * multiplierIncrementErc721;
 
-        return (lockPeriodMultiplier * erc721Multiplier) / 100;
+        return (lockPeriodMultiplier * erc721Multiplier) / 1e18;
     }
 
     function _mintRewardTokens(address recipient, uint256 amount) private {
@@ -155,7 +128,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
         uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriodInDays);
-        uint256 weightedStake = (erc20Amount * multiplier) / 100;
+        uint256 weightedStake = (erc20Amount * multiplier) / 1e18;
 
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
 
@@ -206,5 +179,13 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
         REWARD_STOP_TIME = _REWARD_STOP_TIME;
+    }
+
+    function set_multiplierIncrementErc721(uint256 _multiplierIncrementErc721) external onlyOwner {
+        multiplierIncrementErc721 = _multiplierIncrementErc721;
+    }
+
+    function set_multiplierIncrementLockPeriod(uint256 _multiplierIncrementLockPeriod) external onlyOwner {
+        multiplierIncrementLockPeriod = _multiplierIncrementLockPeriod;
     }
 }
