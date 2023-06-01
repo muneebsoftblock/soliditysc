@@ -28,6 +28,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 stakeStartTime;
         uint256 weightedStake;
         uint256 claimedRewards;
+        uint8 stakeOption;
     }
     enum StakeOption {
         FlexibleStake,
@@ -44,7 +45,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) public stakedTokensDistribution;
     mapping(uint256 => uint256) public rewardTokensDistribution;
     mapping(address => uint256) public lastCompoundingTime;
-    mapping(address => StakeOption) public stakeOption;
+    // mapping(address => StakeOption) public stakeOption;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
     uint256 public REWARD_PER_DAY = 137_000 ether;
@@ -117,7 +118,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
-        require(block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod, "Lock period not reached");
+        if (stakeInfo.stakeOption == LockedStake) {
+            require(block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod, "Lock period not reached");
+        }
 
         uint256 rewardAmount = getUserRewards(msg.sender);
         stakingToken.transfer(msg.sender, stakeInfo.stakingAmount);
@@ -187,12 +190,14 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         emit RewardsCompounded(msg.sender, additionalRewards);
     }
 
-    function stake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds, uint8 stakeOption) external nonReentrant {
+    function lockedStake(uint256 erc20Amount, uint256 lockPeriodInDays, uint256[] calldata erc721TokenIds, uint8 stakeOption) external nonReentrant {
         require(stakes[msg.sender].stakingAmount == 0, "Existing stake found. Unstake before staking again.");
         require(erc20Amount > 0, "Staking amount must be greater than 0");
         require(stakeOption == uint8(StakeOption.FlexibleStake) || stakeOption == uint8(StakeOption.LockedStake), "Invalid stake option");
+        require(stakeOption == LockedStake, "Staking must be Locked");
+
         // Set the stake option for the user
-        stakeOption[msg.sender] = StakeOption(stakeOption);
+        // stakeOption[msg.sender] = StakeOption(stakeOption);
 
         uint256 lockPeriod = lockPeriodInDays * 1 days;
         uint256 numErc721Tokens = erc721TokenIds.length;
@@ -211,7 +216,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             stakedTokenIds: erc721TokenIds,
             stakeStartTime: block.timestamp,
             weightedStake: weightedStake,
-            claimedRewards: 0
+            claimedRewards: 0,
+            stakeOption: StakeOption(stakeOption)
         });
         // Initialize the last compounding time
         lastCompoundingTime[msg.sender] = block.timestamp;
