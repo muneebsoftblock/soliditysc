@@ -126,34 +126,36 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     }
 
     function stake(uint256 erc20Amount, uint256 lockPeriod, uint256[] calldata erc721TokenIds) external nonReentrant {
+        StakeInfo storage stakeInfo = stakes[msg.sender];
+
+        // clean old variables
+        totalWeightedStake -= stakeInfo.weightedStake;
+        stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
+
+        stakeInfo.stakeStartTime = block.timestamp;
+        stakeInfo.stakingAmount += erc20Amount;
+        stakeInfo.lockPeriod += lockPeriod;
+
+        // requirements
+        require(stakeInfo.lockPeriod + lockPeriod <= MAX_LOCK_DURATION, "Can not stake more than maximum lock period");
         require(lockPeriod == 0 || lockPeriod >= MIN_LOCK_DURATION, "Can not stake less than minimum lock period");
 
-        StakeInfo storage stakeInfo = stakes[msg.sender];
-        require(lockPeriod >= stakeInfo.lockPeriod && lockPeriod <= MAX_LOCK_DURATION, "Can not stake more than maximum lock period");
-
-        uint256 numErc721Tokens = erc721TokenIds.length;
-        uint256 multiplier = _getMultiplier(numErc721Tokens, lockPeriod);
-        uint256 weightedStake = (erc20Amount * multiplier) / 1e18;
-
+        // store the staked assets
         stakingToken.transferFrom(msg.sender, address(this), erc20Amount);
-
-        for (uint256 i = 0; i < numErc721Tokens; i++) {
+        for (uint256 i = 0; i < erc721TokenIds.length; i++) {
             erc721.safeTransferFrom(msg.sender, address(this), erc721TokenIds[i]);
             stakeInfo.stakedTokenIds.push(erc721TokenIds[i]);
         }
 
-        if (stakedTokensDistribution[stakeInfo.lockPeriod] >= stakeInfo.stakingAmount)
-            stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
-
-        stakeInfo.stakeStartTime = block.timestamp;
-        stakeInfo.stakingAmount += erc20Amount;
-        stakeInfo.weightedStake += weightedStake;
-        stakeInfo.lockPeriod += lockPeriod;
+        // Calculations
+        uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod);
+        uint256 weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18;
+        stakeInfo.weightedStake = weightedStake;
 
         totalStaked += erc20Amount;
-        totalWeightedStake += weightedStake;
-
         txDistribution[stakeInfo.lockPeriod]++;
+
+        totalWeightedStake += weightedStake;
         stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
     }
 

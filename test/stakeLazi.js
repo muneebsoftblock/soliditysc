@@ -150,7 +150,24 @@ contract("Staking", (accounts) => {
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
 
         await staking.stake(userAStakeAmount, 0, userAERC721TokenIds, { from: userA })
+        {
+            const stakeInfo = await staking.stakes(user1)
+            console.log("\nStaked info user 1:")
+            viewStruct(stakeInfo)
+        }
         await staking.stake(userAStakeAmount, lockPeriodInDays, [3], { from: userA })
+        {
+            const stakeInfo = await staking.stakes(user1)
+            console.log("\nStaked info user 1:")
+            viewStruct(stakeInfo)
+        }
+        await staking.stake("0", 0, [], { from: userA })
+
+        {
+            const stakeInfo = await staking.stakes(user1)
+            console.log("\nStaked info user 1:")
+            viewStruct(stakeInfo)
+        }
 
         // User B stakes
         const userB = accounts[2]
