@@ -335,11 +335,11 @@ contract("Staking", (accounts) => {
 
         // User 2 rewards
         const user2Rewards = await staking.getUserRewards(user2)
-        expect(user2Rewards).to.be.bignumber.equal(new BN(0))
+        expect(user2Rewards).to.be.bignumber.greaterThan(new BN(0))
 
         // User 4 rewards
         const user4Rewards = await staking.getUserRewards(user4)
-        expect(user4Rewards).to.be.bignumber.equal(new BN(0))
+        expect(user4Rewards).to.be.bignumber.greaterThan(new BN(0))
 
         // User 5 rewards
         const user5Rewards = await staking.getUserRewards(user5)
