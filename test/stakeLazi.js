@@ -12,6 +12,8 @@ const viewStruct = (obj) =>
             isNaN(k) &&
             (k === "weightedStake" || k === "stakingAmount" || k === "claimedRewards"
                 ? console.log(k + " " + fromWei("" + obj[k]))
+                : k === "lockPeriod"
+                ? console.log(k + " days " + obj[k] / 86400)
                 : console.log(k + " " + obj[k]))
     )
 
@@ -131,7 +133,7 @@ contract("Staking", (accounts) => {
             console.log("APR = " + APR.toNumber() + "%")
         }
 
-        const daysToStake = [0, 30, 60, 90, 180, 365]
+        const daysToStake = [0 * 86400, 30 * 86400, 60 * 86400, 90 * 86400, 180 * 86400, 365 * 86400]
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
     })
@@ -139,14 +141,16 @@ contract("Staking", (accounts) => {
     it("should distribute rewards correctly after one day", async () => {
         // User A stakes
         const userA = accounts[1]
-        const userAStakeAmount = "25000" + "0".repeat(18)
+        const allow = "100000" + "0".repeat(18)
+        const userAStakeAmount = "100" + "0".repeat(18)
         const userALockPeriod = 365 * 24 * 60 * 60
-        const userAERC721TokenIds = [1, 2, 3]
+        const userAERC721TokenIds = [1, 2]
         const lockPeriodInDays = 30 * 86400
-        await erc20.approve(staking.address, userAStakeAmount, { from: userA })
+        await erc20.approve(staking.address, allow, { from: userA })
         await erc721.setApprovalForAll(staking.address, true, { from: userA })
 
-        await staking.stake(userAStakeAmount, lockPeriodInDays, userAERC721TokenIds, { from: userA })
+        await staking.stake(userAStakeAmount, 0, userAERC721TokenIds, { from: userA })
+        await staking.stake(userAStakeAmount, lockPeriodInDays, [3], { from: userA })
 
         // User B stakes
         const userB = accounts[2]
@@ -174,7 +178,7 @@ contract("Staking", (accounts) => {
         console.log("User B rewards:", fromWei(userBRewards.toString()))
         console.log("Total rewards:", fromWei(totalRewards.toString()))
 
-        const daysToStake = [0, 30, 60, 90, 180, 365]
+        const daysToStake = [0 * 86400, 30 * 86400, 60 * 86400, 90 * 86400, 180 * 86400, 365 * 86400]
         const lockPeriodDistributions = await staking.getDistributions(daysToStake)
         viewStruct(lockPeriodDistributions)
         console.log("total reward! ", fromWei(totalRewards.toString()))
