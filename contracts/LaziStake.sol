@@ -57,6 +57,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     }
 
     function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
+        if (lockPeriod == 0) return 1 * 1e18;
+
         uint256 lockPeriodMultiplier = 1 * 1e18 + lockPeriod * multiplierIncrementLockPeriod;
 
         uint256 erc721Multiplier = 1 * 1e18 + erc721Tokens * multiplierIncrementErc721;
