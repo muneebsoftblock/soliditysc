@@ -143,6 +143,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         uint256 secondsPassed = checkPoint - stakeInfo.stakeStartTime;
         uint256 rewardAmount = (stakeInfo.weightedStake * secondsPassed * REWARD_PER_DAY) / (1 days * totalWeightedStake);
+
+        if (rewardAmount <= stakeInfo.claimedRewards) return 0;
+
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
