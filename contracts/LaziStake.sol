@@ -55,6 +55,12 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         erc721 = _erc721;
     }
 
+    /**
+     * @dev Calculates the weighted stake multiplier based on the number of ERC721 tokens and lock period.
+     * @param erc721Tokens The number of ERC721 tokens staked.
+     * @param lockPeriod The lock period in seconds.
+     * @return The weighted stake multiplier.
+     */
     function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
         if (lockPeriod == 0) return 1 * 1e18;
 
@@ -65,10 +71,19 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return (lockPeriodMultiplier * erc721Multiplier) / 1e18;
     }
 
+    /**
+     * @dev Mints reward tokens to the specified recipient.
+     * @param recipient The address to receive the reward tokens.
+     * @param amount The amount of reward tokens to mint.
+     */
     function _mintRewardTokens(address recipient, uint256 amount) private {
         rewardToken.mint(recipient, amount);
     }
 
+    /**
+     * @dev Unstakes the staked tokens and transfers them back to the user.
+     * @dev Also transfers the earned reward tokens to the user and removes the staked ERC721 tokens from the contract.
+     */
     function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
@@ -91,6 +106,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         delete stakes[msg.sender];
     }
 
+    /**
+     * @dev Harvests the earned reward tokens for the caller and adds them to the user's balance.
+     */
     function harvest() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         uint256 rewardAmount = getUserRewards(msg.sender);
@@ -103,12 +121,21 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         txDistribution[stakeInfo.lockPeriod]++;
     }
 
+    /**
+     * @dev Withdraws the specified ERC20 tokens from the contract and transfers them to the contract owner.
+     * @param _erc20 The address of the ERC20 token to withdraw.
+     */
     function withdrawERC20(address _erc20) external onlyOwner {
         IERC20 token = IERC20(_erc20);
         uint256 balance = token.balanceOf(address(this));
         token.transfer(owner(), balance);
     }
 
+    /**
+     * @dev Calculates the rewards earned by the user based on their stake and the current time.
+     * @param user The address of the user.
+     * @return The amount of reward tokens earned.
+     */
     function getUserRewards(address user) public view returns (uint256) {
         StakeInfo storage stakeInfo = stakes[user];
         uint checkPoint = Math.min(REWARD_STOP_TIME, block.timestamp);
@@ -123,6 +150,12 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         return rewardAmount - stakeInfo.claimedRewards;
     }
 
+    /**
+     * @dev Stakes the specified amount of ERC20 tokens and ERC721 tokens for the specified lock period.
+     * @param erc20Amount The amount of ERC20 tokens to stake.
+     * @param lockPeriod The lock period in seconds.
+     * @param erc721TokenIds The IDs of the ERC721 tokens to stake.
+     */
     function stake(uint256 erc20Amount, uint256 lockPeriod, uint256[] calldata erc721TokenIds) external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
 
@@ -158,51 +191,59 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             uint256 weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18;
             stakeInfo.weightedStake = weightedStake;
             totalWeightedStake += weightedStake;
+
+            stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
+            txDistribution[stakeInfo.lockPeriod]++;
         }
 
         totalStaked += erc20Amount;
-        txDistribution[stakeInfo.lockPeriod]++;
-
-        stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
     }
 
-    function getDistributions(
-        uint256[] calldata timeToStake
-    ) external view returns (uint256[] memory txDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions) {
-        uint256 length = timeToStake.length;
-        txDistributions = new uint256[](length);
-        stakedTokenDistributions = new uint256[](length);
-        rewardTokenDistributions = new uint256[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            uint256 time = timeToStake[i];
-            txDistributions[i] = txDistribution[time];
-            stakedTokenDistributions[i] = stakedTokensDistribution[time];
-            rewardTokenDistributions[i] = rewardTokensDistribution[time];
-        }
+    /**
+     * @dev Updates the reward per second rate.
+     * @param rewardPerSec The new reward per second rate.
+     */
+    function updateRewardPerSec(uint256 rewardPerSec) external onlyOwner {
+        REWARD_PER_SEC = rewardPerSec;
     }
 
-    function set_REWARD_PER_SEC(uint256 _REWARD_PER_SEC) external onlyOwner {
-        REWARD_PER_SEC = _REWARD_PER_SEC;
+    /**
+     * @dev Updates the stop time for reward distribution.
+     * @param stopTime The new stop time for reward distribution.
+     */
+    function updateRewardStopTime(uint256 stopTime) external onlyOwner {
+        REWARD_STOP_TIME = stopTime;
     }
 
-    function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
-        REWARD_STOP_TIME = _REWARD_STOP_TIME;
+    /**
+     * @dev Updates the minimum lock duration.
+     * @param minLockDuration The new minimum lock duration.
+     */
+    function updateMinLockDuration(uint256 minLockDuration) external onlyOwner {
+        MIN_LOCK_DURATION = minLockDuration;
     }
 
-    function set_multiplierIncrementErc721(uint256 _multiplierIncrementErc721) external onlyOwner {
-        multiplierIncrementErc721 = _multiplierIncrementErc721;
+    /**
+     * @dev Updates the maximum lock duration.
+     * @param maxLockDuration The new maximum lock duration.
+     */
+    function updateMaxLockDuration(uint256 maxLockDuration) external onlyOwner {
+        MAX_LOCK_DURATION = maxLockDuration;
     }
 
-    function set_multiplierIncrementLockPeriod(uint256 _multiplierIncrementLockPeriod) external onlyOwner {
-        multiplierIncrementLockPeriod = _multiplierIncrementLockPeriod;
+    /**
+     * @dev Updates the multiplier increment for ERC721 tokens.
+     * @param increment The new multiplier increment for ERC721 tokens.
+     */
+    function updateMultiplierIncrementErc721(uint256 increment) external onlyOwner {
+        multiplierIncrementErc721 = increment;
     }
 
-    function set_MIN_LOCK_DURATION(uint256 _MIN_LOCK_DURATION) external onlyOwner {
-        MIN_LOCK_DURATION = _MIN_LOCK_DURATION;
-    }
-
-    function set_MAX_LOCK_DURATION(uint256 _MAX_LOCK_DURATION) external onlyOwner {
-        MAX_LOCK_DURATION = _MAX_LOCK_DURATION;
+    /**
+     * @dev Updates the multiplier increment for the lock period.
+     * @param increment The new multiplier increment for the lock period.
+     */
+    function updateMultiplierIncrementLockPeriod(uint256 increment) external onlyOwner {
+        multiplierIncrementLockPeriod = increment;
     }
 }
