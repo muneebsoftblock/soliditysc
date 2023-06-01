@@ -162,7 +162,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         StakeInfo storage stakeInfo = stakes[msg.sender];
 
         // Clean old variables
-        stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
+        if (stakedTokensDistribution[stakeInfo.lockPeriod] >= stakeInfo.stakingAmount)
+            stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
 
         // Increase the staking amount and lock period for the user
         stakeInfo.stakingAmount += erc20Amount;
@@ -185,16 +186,17 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             // Add assets to the same lock period
             uint256 multiplier = _getMultiplier(erc721TokenIds.length, lockPeriod); // Calculate the multiplier based on the number of ERC721 tokens and the lock period
             weightedStake = (erc20Amount * multiplier) / 1e18; // Calculate the weighted stake by multiplying the ERC20 amount with the multiplier and dividing by 1e18
+            stakeInfo.weightedStake += weightedStake; // Update the weighted stake for the user in the stakeInfo storage
         } else {
+            stakeInfo.stakeStartTime = block.timestamp; // Set the stake start time to the current block timestamp
+            totalWeightedStake -= stakeInfo.weightedStake; // Subtract the previous weighted stake from the total weighted stake
+
             // Renew the lock period
             uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod); // Calculate the multiplier based on the number of staked tokens and the lock period
             weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18; // Calculate the new weighted stake by multiplying the staking amount with the multiplier and dividing by 1e18
-
-            stakeInfo.stakeStartTime = block.timestamp; // Set the stake start time to the current block timestamp
-            totalWeightedStake -= stakeInfo.weightedStake; // Subtract the previous weighted stake from the total weighted stake
+            stakeInfo.weightedStake = weightedStake; // Update the weighted stake for the user in the stakeInfo storage
         }
 
-        stakeInfo.weightedStake = weightedStake; // Update the weighted stake for the user in the stakeInfo storage
         totalWeightedStake += weightedStake; // Add the new weighted stake to the total weighted stake
 
         // Update staked tokens distribution and transaction distribution to show on UI
