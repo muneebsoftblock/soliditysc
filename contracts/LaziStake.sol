@@ -11,6 +11,8 @@
     1e18 must remain in multiplier. when multiplier is multiplied with desired value. then divide 1e18 with desired value to remove it 
  */
 
+pragma solidity ^0.8.0;
+
 import "./LaziToken.sol"; // Importing the LaziToken contract.
 
 import "@openzeppelin/contracts/access/Ownable.sol"; // Importing the Ownable contract from the OpenZeppelin library.
@@ -40,9 +42,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public totalStaked; // The total amount of tokens staked.
     uint256 public totalWeightedStake; // The total weighted stake.
     mapping(address => StakeInfo) public stakes; // Mapping of user addresses to their stake information.
-    mapping(uint256 => uint256) public txDistribution; // Mapping of lock periods to the number of transactions.
-    mapping(uint256 => uint256) public stakedTokensDistribution; // Mapping of lock periods to the total amount of staked tokens.
-    mapping(uint256 => uint256) public rewardTokensDistribution; // Mapping of lock periods to the total amount of reward tokens.
+    mapping(uint256 => uint256) private txDistribution; // Mapping of lock periods to the number of transactions.
+    mapping(uint256 => uint256) private stakedTokensDistribution; // Mapping of lock periods to the total amount of staked tokens.
+    mapping(uint256 => uint256) private rewardTokensDistribution; // Mapping of lock periods to the total amount of reward tokens.
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days; // The stop time for reward distribution.
     uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.
@@ -249,5 +251,30 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
      */
     function updateMultiplierIncrementLockPeriod(uint256 increment) external onlyOwner {
         multiplierIncrementLockPeriod = increment;
+    }
+
+    /**
+     * @notice Retrieves the distributions of transactions, staked tokens, and reward tokens for the given time periods.
+     * @dev This function allows retrieving multiple distributions at once for efficiency.
+     * @param timeToStake An array of time periods for which to retrieve the distributions.
+     * @return txDistributions An array containing the transaction distributions for each specified time period.
+     * @return stakedTokenDistributions An array containing the staked token distributions for each specified time period.
+     * @return rewardTokenDistributions An array containing the reward token distributions for each specified time period.
+     */
+
+    function getDistributions(
+        uint256[] calldata timeToStake
+    ) external view returns (uint256[] memory txDistributions, uint256[] memory stakedTokenDistributions, uint256[] memory rewardTokenDistributions) {
+        uint256 length = timeToStake.length;
+        txDistributions = new uint256[](length); // Array to store transaction distributions
+        stakedTokenDistributions = new uint256[](length); // Array to store staked token distributions
+        rewardTokenDistributions = new uint256[](length); // Array to store reward token distributions
+
+        for (uint256 i = 0; i < length; i++) {
+            uint256 time = timeToStake[i];
+            txDistributions[i] = txDistribution[time]; // Get transaction distribution for the specified time
+            stakedTokenDistributions[i] = stakedTokensDistribution[time]; // Get staked token distribution for the specified time
+            rewardTokenDistributions[i] = rewardTokensDistribution[time]; // Get reward token distribution for the specified time
+        }
     }
 }
