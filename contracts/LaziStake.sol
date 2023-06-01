@@ -11,45 +11,43 @@
     1e18 must remain in multiplier. when multiplier is multiplied with desired value. then divide 1e18 with desired value to remove it 
  */
 
-pragma solidity ^0.8.0;
+import "./LaziToken.sol"; // Importing the LaziToken contract.
 
-import "./LaziToken.sol";
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; // Importing the Ownable contract from the OpenZeppelin library.
+import "@openzeppelin/contracts/utils/math/Math.sol"; // Importing the Math library from the OpenZeppelin library.
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; // Importing the IERC20 interface from the OpenZeppelin library.
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol"; // Importing the IERC721 interface from the OpenZeppelin library.
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; // Importing the ReentrancyGuard contract from the OpenZeppelin library.
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol"; // Importing the ERC721Holder contract from the OpenZeppelin library.
 
 contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     struct StakeInfo {
-        uint256 stakingAmount;
-        uint256 lockPeriod;
-        uint256[] stakedTokenIds;
-        uint256 stakeStartTime;
-        uint256 weightedStake;
-        uint256 claimedRewards;
+        uint256 stakingAmount; // The amount of tokens staked.
+        uint256 lockPeriod; // The lock period in seconds.
+        uint256[] stakedTokenIds; // The IDs of the staked ERC721 tokens.
+        uint256 stakeStartTime; // The start time of the stake.
+        uint256 weightedStake; // The weighted stake based on the staking amount and multipliers.
+        uint256 claimedRewards; // The amount of claimed rewards.
     }
 
-    IERC20 public stakingToken;
-    LAZI public rewardToken;
-    IERC721 public erc721;
+    IERC20 public stakingToken; // The ERC20 token used for staking.
+    LAZI public rewardToken; // The reward token.
+    IERC721 public erc721; // The ERC721 token used for staking.
 
-    uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // multipliers as 1x, 1.4x, 1.8x, 2.2x, 2.8x, ...
-    uint256 private multiplierIncrementLockPeriod = 0.00000066 * 1e18;
+    uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
+    uint256 private multiplierIncrementLockPeriod = 0.00000066 * 1e18; // The increment value for the lock period multiplier.
 
-    uint256 public totalStaked;
-    uint256 public totalWeightedStake;
-    mapping(address => StakeInfo) public stakes;
-    mapping(uint256 => uint256) public txDistribution;
-    mapping(uint256 => uint256) public stakedTokensDistribution;
-    mapping(uint256 => uint256) public rewardTokensDistribution;
+    uint256 public totalStaked; // The total amount of tokens staked.
+    uint256 public totalWeightedStake; // The total weighted stake.
+    mapping(address => StakeInfo) public stakes; // Mapping of user addresses to their stake information.
+    mapping(uint256 => uint256) public txDistribution; // Mapping of lock periods to the number of transactions.
+    mapping(uint256 => uint256) public stakedTokensDistribution; // Mapping of lock periods to the total amount of staked tokens.
+    mapping(uint256 => uint256) public rewardTokensDistribution; // Mapping of lock periods to the total amount of reward tokens.
 
-    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_SEC = 1.5856 * 1e18;
-    uint256 public MIN_LOCK_DURATION = 7 days;
-    uint256 public MAX_LOCK_DURATION = 365 days;
+    uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days; // The stop time for reward distribution.
+    uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.
+    uint256 public MIN_LOCK_DURATION = 7 days; // The minimum lock duration in seconds.
+    uint256 public MAX_LOCK_DURATION = 365 days; // The maximum lock duration in seconds.
 
     constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
