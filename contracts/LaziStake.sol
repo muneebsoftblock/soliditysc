@@ -129,10 +129,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         StakeInfo storage stakeInfo = stakes[msg.sender];
 
         // clean old variables
-        totalWeightedStake -= stakeInfo.weightedStake;
         stakedTokensDistribution[stakeInfo.lockPeriod] -= stakeInfo.stakingAmount;
 
-        stakeInfo.stakeStartTime = block.timestamp;
         stakeInfo.stakingAmount += erc20Amount;
         stakeInfo.lockPeriod += lockPeriod;
 
@@ -148,14 +146,25 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
         }
 
         // Calculations
-        uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod);
-        uint256 weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18;
-        stakeInfo.weightedStake = weightedStake;
+        if (lockPeriod == 0) {
+            // add assets to same lock period
+            uint256 multiplier = _getMultiplier(erc721TokenIds.length, lockPeriod);
+            uint256 weightedStake = (erc20Amount * multiplier) / 1e18;
+            stakeInfo.weightedStake += weightedStake;
+            totalWeightedStake += weightedStake;
+        } else {
+            // renew lock period
+            stakeInfo.stakeStartTime = block.timestamp;
+            totalWeightedStake -= stakeInfo.weightedStake;
+            uint256 multiplier = _getMultiplier(stakeInfo.stakedTokenIds.length, stakeInfo.lockPeriod);
+            uint256 weightedStake = (stakeInfo.stakingAmount * multiplier) / 1e18;
+            stakeInfo.weightedStake = weightedStake;
+            totalWeightedStake += weightedStake;
+        }
 
         totalStaked += erc20Amount;
         txDistribution[stakeInfo.lockPeriod]++;
 
-        totalWeightedStake += weightedStake;
         stakedTokensDistribution[stakeInfo.lockPeriod] += stakeInfo.stakingAmount;
     }
 

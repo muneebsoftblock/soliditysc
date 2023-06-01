@@ -30,7 +30,7 @@ contract("Staking", (accounts) => {
         })
         await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
 
-        // caluclate index function
+        // calculate index function
 
         await erc20.mint(user1, ether("5000000"), { from: owner })
         await erc20.mint(user2, ether("5000000"), { from: owner })
