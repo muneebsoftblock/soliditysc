@@ -34,8 +34,9 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public w3 = 15;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_DAY = 137_000 ether;
-    uint256 public maxEngagementDays = 2000 days;
+    uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.    uint256 public maxEngagementDays = 2000 days;
+
+    uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
 
     // Define penalty variables
     uint256 public stakePenaltyUnder50 = 30;
@@ -66,7 +67,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public totalWeightedStakedDuration;
 
     uint256 public PENALTY_POOL;
-    uint256[] public multiplierValues;
     mapping(bytes => bool) public _signatureUsed;
 
     event Staked(address indexed user, uint256 stakedLazi, uint256 stakeDuration, uint256[] erc721TokenIds);
@@ -81,8 +81,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     constructor(address _laziToken, address _laziName) {
         laziToken = LAZI(_laziToken);
         erc721Token = IERC721(_laziName);
-        multiplierValues = new uint256[](6);
-        initializeMultiplierValues();
     }
 
     /**
@@ -112,7 +110,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         totalTx += 1;
 
         if (_stakeDuration == 0) {
-            uint256 multiplier = getMultiplier(user);
+            uint256 multiplier = getMultiplier(_stakedLazi, _stakeDuration, _laziUsernameIds.length);
 
             uint stakedLaziWeighted = (_stakedLazi * multiplier) / 1e18;
             user.stakedLaziWeighted += stakedLaziWeighted;
@@ -124,7 +122,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             totalWeightedStakedLazi -= user.stakedLaziWeighted;
             totalWeightedStakedDuration -= user.stakeDurationWeighted;
 
-            uint256 multiplier = getMultiplier(user);
+            uint256 multiplier = getMultiplier(user.stakedLazi, user.stakedDuration, user.erc721TokenIds.length);
             user.stakedLaziWeighted = (user.stakedLazi * multiplier) / 1e18;
             user.stakeDurationWeighted = (user.stakeDuration * multiplier) / 1e18;
 
@@ -197,46 +195,15 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
      * @param user The user information
      * @return The multiplier value
      */
-    function getMultiplier(User memory user) internal view returns (uint256) {
-        uint256 S = totalWeightedStakedLazi == 0 ? 1e18 : (user.stakedLazi * 1e18) / totalWeightedStakedLazi;
-        uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (user.stakeDuration * 1e18) / totalWeightedStakedDuration;
-        uint256 U = getMultiplierValue(user.erc721TokenIds.length);
+    function getMultiplier(uint stakedLazi, uint stakeDuration, uint numErc721TokenIds) internal view returns (uint256) {
+        uint256 S = totalWeightedStakedLazi == 0 ? 1e18 : (stakedLazi * 1e18) / totalWeightedStakedLazi;
+        uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (stakeDuration * 1e18) / totalWeightedStakedDuration;
+        uint256 U = 1 * 1e18 + numErc721TokenIds * multiplierIncrementErc721;
 
         if (S < 1e18) S = 1e18;
         if (T < 1e18) T = 1e18;
-        if (U < 1e18) U = 1e18;
 
         return (S * T * U) / 1e36;
-    }
-
-    /**
-     * @notice Initialize the multiplier values
-     */
-    function initializeMultiplierValues() internal onlyOwner {
-        multiplierValues[0] = 1.00 * 1e18;
-        multiplierValues[1] = 1.20 * 1e18;
-        multiplierValues[2] = 1.40 * 1e18;
-        multiplierValues[3] = 1.60 * 1e18;
-        multiplierValues[4] = 1.80 * 1e18;
-        multiplierValues[5] = 2.00 * 1e18;
-    }
-
-    /**
-     * @notice Update the multiplier values
-     * @param _multiplierValues An array of multiplier values
-     */
-    function updateMultiplierValues(uint256[] calldata _multiplierValues) external onlyOwner {
-        multiplierValues = _multiplierValues;
-    }
-
-    /**
-     * @notice Get a multiplier value at a specific index
-     * @param index The index of the multiplier value to retrieve
-     * @return The multiplier value
-     */
-    function getMultiplierValue(uint256 index) internal view returns (uint256) {
-        if (index >= multiplierValues.length) index = multiplierValues.length - 1;
-        return multiplierValues[index];
     }
 
     /**
@@ -254,11 +221,11 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         if (checkPoint <= user.stakeStartTime) return 0;
 
         uint256 elapsedTime = checkPoint - user.stakeStartTime;
-        uint256 reward = elapsedTime * REWARD_PER_DAY;
+        uint256 reward = elapsedTime * REWARD_PER_SEC;
 
-        uint256 rewardContribution = (contributionWeighted * reward * w1) / (100 * totalWeightedContribution * 1 days);
-        uint256 rewardStakedDuration = (user.stakeDurationWeighted * reward * w2) / (100 * totalWeightedStakedDuration * 1 days);
-        uint256 rewardStakedAmount = (user.stakedLaziWeighted * reward * w3) / (100 * totalWeightedStakedLazi * 1 days);
+        uint256 rewardContribution = (contributionWeighted * reward * w1) / (100 * totalWeightedContribution);
+        uint256 rewardStakedDuration = (user.stakeDurationWeighted * reward * w2) / (100 * totalWeightedStakedDuration);
+        uint256 rewardStakedAmount = (user.stakedLaziWeighted * reward * w3) / (100 * totalWeightedStakedLazi);
 
         uint totalReward = rewardContribution + rewardStakedDuration + rewardStakedAmount;
         return totalReward;
@@ -284,8 +251,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         w3 = _w3;
     }
 
-    function set_REWARD_PER_DAY(uint256 _REWARD_PER_DAY) external onlyOwner {
-        REWARD_PER_DAY = _REWARD_PER_DAY;
+    function set_REWARD_PER_SEC(uint256 _REWARD_PER_SEC) external onlyOwner {
+        REWARD_PER_SEC = _REWARD_PER_SEC;
     }
 
     function set_REWARD_STOP_TIME(uint256 _REWARD_STOP_TIME) external onlyOwner {
@@ -323,5 +290,13 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         rewardPenaltyUnder50 = _rewardPenaltyUnder50;
         rewardPenaltyBetween50And80 = _rewardPenaltyBetween50And80;
         rewardPenaltyBetween80And100 = _rewardPenaltyBetween80And100;
+    }
+
+    /**
+     * @dev Updates the multiplier increment for ERC721 tokens.
+     * @param increment The new multiplier increment for ERC721 tokens.
+     */
+    function updateMultiplierIncrementErc721(uint256 increment) external onlyOwner {
+        multiplierIncrementErc721 = increment;
     }
 }
