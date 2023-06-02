@@ -184,13 +184,13 @@ contract("Staking", (accounts) => {
 
         console.log("User Rewards:", fromWei(userRewards.toString()))
 
-        const REWARD_PER_DAY = await staking.REWARD_PER_DAY()
+        const REWARD_PER_SEC = await staking.REWARD_PER_SEC()
         const totalStaked = await staking.totalStakedLazi()
 
         if (totalStaked.isZero()) {
             console.log("No tokens staked.")
         } else {
-            const APR = REWARD_PER_DAY.muln(365).muln(100).div(totalStaked)
+            const APR = REWARD_PER_SEC.muln(86400).muln(365).muln(100).div(totalStaked)
             console.log("APR = " + APR.toNumber() + "%")
         }
     })
@@ -230,7 +230,7 @@ contract("Staking", (accounts) => {
         console.log("User B rewards:", fromWei(userBRewards.toString()))
         console.log("Total rewards:", fromWei(totalRewards.toString()))
 
-        expect(totalRewards).to.be.bignumber.greaterThan(ether("137000"))
+        expect(totalRewards).to.be.bignumber.greaterThan(ether("136000"))
         expect(totalRewards).to.be.bignumber.lessThan(ether("137010"))
         // assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
     })

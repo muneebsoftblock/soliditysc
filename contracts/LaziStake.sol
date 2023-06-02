@@ -186,6 +186,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             uint256 multiplier = _getMultiplier(erc721TokenIds.length, lockPeriod); // Calculate the multiplier based on the number of ERC721 tokens and the lock period
             uint256 weightedStake = (erc20Amount * multiplier) / 1e18; // Calculate the weighted stake by multiplying the ERC20 amount with the multiplier and dividing by 1e18
             stakeInfo.weightedStake += weightedStake; // Update the weighted stake for the user in the stakeInfo storage
+            totalWeightedStake += weightedStake; // Add the new weighted stake to the total weighted stake
         } else {
             stakeInfo.stakeStartTime = block.timestamp; // Set the stake start time to the current block timestamp
             totalWeightedStake -= stakeInfo.weightedStake; // Subtract the previous weighted stake from the total weighted stake
