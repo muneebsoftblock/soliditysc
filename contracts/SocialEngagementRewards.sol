@@ -34,7 +34,8 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public w3 = 15;
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days;
-    uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.    uint256 public maxEngagementDays = 2000 days;
+    uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.
+    uint256 public maxEngagementDays = 2000 days;
 
     uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
 
@@ -122,7 +123,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
             totalWeightedStakedLazi -= user.stakedLaziWeighted;
             totalWeightedStakedDuration -= user.stakeDurationWeighted;
 
-            uint256 multiplier = getMultiplier(user.stakedLazi, user.stakedDuration, user.erc721TokenIds.length);
+            uint256 multiplier = getMultiplier(user.stakedLazi, user.stakeDuration, user.erc721TokenIds.length);
             user.stakedLaziWeighted = (user.stakedLazi * multiplier) / 1e18;
             user.stakeDurationWeighted = (user.stakeDuration * multiplier) / 1e18;
 
@@ -192,7 +193,6 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     /**
      * @notice Calculate the multiplier for a user's stake
-     * @param user The user information
      * @return The multiplier value
      */
     function getMultiplier(uint stakedLazi, uint stakeDuration, uint numErc721TokenIds) internal view returns (uint256) {
