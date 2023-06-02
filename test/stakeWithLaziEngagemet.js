@@ -18,7 +18,11 @@ const viewStruct = (obj) =>
     Object.keys(obj).forEach(
         (k) =>
             isNaN(k) &&
-            (k === "stakedLazi" || k === "stakedLaziWeighted" ? console.log(k + " " + fromWei("" + obj[k])) : console.log(k + " " + obj[k]))
+            (k === "stakedLazi" || k === "stakedLaziWeighted"
+                ? console.log(k + " " + fromWei("" + obj[k]))
+                : k === "stakeDuration"
+                ? console.log(k + " days " + obj[k] / 86400)
+                : console.log(k + " " + obj[k]))
     )
 
 contract("Staking", (accounts) => {
@@ -32,19 +36,24 @@ contract("Staking", (accounts) => {
         staking = await Staking.new(erc20.address, erc721.address, { from: owner })
         await erc20.grantRole(await erc20.MINTER_ROLE(), staking.address, { from: owner })
 
-        await erc20.mint(user1, ether("100"), { from: owner })
-        await erc20.mint(user2, ether("100"), { from: owner })
+        await erc20.mint(user1, ether("200"), { from: owner })
+        await erc20.mint(user2, ether("200"), { from: owner })
         // await erc20.mint(staking.address, ether("200000000"), { from: owner })
 
         await erc721.airdrop([user1, user1, user1], ["1 one", "2 two", "3 three"], { from: owner })
         await erc721.airdrop([user2, user2, user2, user2, user2], ["4 f", "5 f", "6 s", "7 s", "8 e"], { from: owner })
+
+        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
+        await erc721.setApprovalForAll(staking.address, true, { from: user2 })
+
+        await erc20.approve(staking.address, ether("10000"), { from: user1 })
+        await erc20.approve(staking.address, ether("10000"), { from: user2 })
     })
 
     it("should stake ERC20 tokens and ERC721 tokens", async () => {
         await erc20.approve(staking.address, ether("100"), { from: user1 })
 
         const erc721Ids = [1, 2, 3]
-        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
 
         await staking.stake(ether("1"), 30 * 86400, erc721Ids, { from: user1 })
 
@@ -60,14 +69,8 @@ contract("Staking", (accounts) => {
         const days = 86400
         const stakeDuration = 0.5 * days
         const erc721TokenId = 1
-        await erc20.approve(staking.address, stakedLazi, { from: user1 })
-        await erc721.approve(staking.address, erc721TokenId, { from: user1 })
-        await erc20.approve(staking.address, stakedLazi, { from: user2 })
-        await erc721.setApprovalForAll(staking.address, true, { from: user2 })
 
         {
-            console.log()
-
             const stakeInfo = await staking.users(user1)
             console.log("stakeInfo before stake")
             viewStruct(stakeInfo)
@@ -77,23 +80,35 @@ contract("Staking", (accounts) => {
 
         await staking.stake(stakedLazi, stakeDuration, [4, 5], { from: user2 })
         await staking.stake(stakedLazi, stakeDuration, [erc721TokenId], { from: user1 })
-
         {
-            console.log()
-
             const stakeInfo = await staking.users(user1)
-            console.log("after stake")
+            console.log("\nafter stake")
             viewStruct(stakeInfo)
             const stakeReward = await staking.getUserRewards(user1, "50", "100")
             console.log("stakeReward after stake " + fromWei(stakeReward))
         }
+        await staking.stake(0, 0, [], { from: user1 })
+        {
+            const stakeInfo = await staking.users(user1)
+            console.log("\nafter stake")
+            viewStruct(stakeInfo)
+            const stakeReward = await staking.getUserRewards(user1, "50", "100")
+            console.log("stakeReward after stake " + fromWei(stakeReward))
+        }
+        await staking.stake(1, 0, [], { from: user1 })
+        {
+            const stakeInfo = await staking.users(user1)
+            console.log("\nafter stake")
+            viewStruct(stakeInfo)
+            const stakeReward = await staking.getUserRewards(user1, "50", "100")
+            console.log("stakeReward after stake " + fromWei(stakeReward))
+        }
+
         // Fast-forward time to complete the stake duration
         const unstakeAtDays = 1
         await time.increase(time.duration.days(unstakeAtDays))
 
         {
-            console.log()
-
             const stakeInfo = await staking.users(user1)
             console.log("after stake after 1 day")
             viewStruct(stakeInfo)
@@ -158,10 +173,7 @@ contract("Staking", (accounts) => {
     // Add remaining test cases for unstake, harvestRewards, compoundRewards, and other functions
 
     it("should get user rewards", async () => {
-        await erc20.approve(staking.address, ether("100"), { from: user1 })
-
         const erc721Ids = [1, 2, 3]
-        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
 
         await staking.stake(ether("100"), 30, erc721Ids, { from: user1 })
 
@@ -190,8 +202,6 @@ contract("Staking", (accounts) => {
         const userALockPeriod = 365 * 86400
         const userAERC721TokenIds = [1, 2, 3]
 
-        await erc20.approve(staking.address, userAStakeAmount, { from: userA })
-        await erc721.setApprovalForAll(staking.address, true, { from: userA })
         await staking.stake(userAStakeAmount, userALockPeriod, userAERC721TokenIds, { from: userA })
 
         // User B stakes
@@ -200,8 +210,6 @@ contract("Staking", (accounts) => {
         const userBLockPeriod = 15 * 30 * 86400
         const userBERC721TokenIds = [4, 5, 6, 7]
 
-        await erc20.approve(staking.address, userBStakeAmount, { from: userB })
-        await erc721.setApprovalForAll(staking.address, true, { from: userB })
         await staking.stake(userBStakeAmount, userBLockPeriod, userBERC721TokenIds, { from: userB })
 
         // Advance time by 1 day
@@ -234,8 +242,6 @@ contract("Staking", (accounts) => {
         const penaltyRateUnder50 = await staking.stakePenaltyUnder50()
 
         // Stake tokens
-        await erc20.approve(staking.address, userStakeAmount, { from: user1 })
-        await erc721.setApprovalForAll(staking.address, true, { from: user1 })
         await staking.stake(userStakeAmount, userLockPeriod, userERC721TokenIds, { from: user1 })
 
         // Increase time by less than the stake duration to trigger penalty

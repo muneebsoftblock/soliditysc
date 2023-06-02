@@ -97,11 +97,9 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     */
     function stake(uint256 _stakedLazi, uint256 _stakeDuration, uint256[] memory _laziUsernameIds) external nonReentrant {
         User storage user = users[msg.sender];
-        require(_stakedLazi > 0, "Staking amount must be greater than 0");
-        require(_stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
+        require(user.stakeDuration + _stakeDuration <= maxEngagementDays, "Stake duration exceeds maximum allowed");
 
         laziToken.transferFrom(msg.sender, address(this), _stakedLazi);
-
         for (uint256 i = 0; i < _laziUsernameIds.length; i++) {
             erc721Token.transferFrom(msg.sender, address(this), _laziUsernameIds[i]);
             user.erc721TokenIds.push(_laziUsernameIds[i]);
@@ -109,17 +107,30 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
         user.stakedLazi += _stakedLazi;
         user.stakeDuration += _stakeDuration;
-        user.stakeStartTime = block.timestamp;
-
         totalStakedLazi += _stakedLazi;
         totalStakedDuration += _stakeDuration;
         totalTx += 1;
 
-        uint256 multiplier = getMultiplier(user);
-        user.stakedLaziWeighted += (_stakedLazi * multiplier) / 1e18;
-        user.stakeDurationWeighted += (_stakeDuration * multiplier) / 1e18;
-        totalWeightedStakedLazi += user.stakedLaziWeighted;
-        totalWeightedStakedDuration += user.stakeDurationWeighted;
+        if (_stakeDuration == 0) {
+            uint256 multiplier = getMultiplier(user);
+
+            uint stakedLaziWeighted = (_stakedLazi * multiplier) / 1e18;
+            user.stakedLaziWeighted += stakedLaziWeighted;
+
+            totalWeightedStakedLazi += stakedLaziWeighted;
+        } else {
+            user.stakeStartTime = block.timestamp;
+
+            totalWeightedStakedLazi -= user.stakedLaziWeighted;
+            totalWeightedStakedDuration -= user.stakeDurationWeighted;
+
+            uint256 multiplier = getMultiplier(user);
+            user.stakedLaziWeighted = (user.stakedLazi * multiplier) / 1e18;
+            user.stakeDurationWeighted = (user.stakeDuration * multiplier) / 1e18;
+
+            totalWeightedStakedLazi += user.stakedLaziWeighted;
+            totalWeightedStakedDuration += user.stakeDurationWeighted;
+        }
 
         emit Staked(msg.sender, _stakedLazi, _stakeDuration, _laziUsernameIds);
     }
