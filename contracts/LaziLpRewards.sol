@@ -51,6 +51,8 @@ contract StakeLP is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public MIN_LOCK_DURATION = 7 days; // The minimum lock duration in seconds.
     uint256 public MAX_LOCK_DURATION = 365 days; // The maximum lock duration in seconds.
 
+    bool public emergencyUnstake = false; // in case of short selling attack, project owner will allow users to unstake LP tokens even if lock period is not met
+
     constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
@@ -89,7 +91,9 @@ contract StakeLP is Ownable, ERC721Holder, ReentrancyGuard {
     function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
-        require(block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod, "Lock period not reached");
+
+
+        require(emergencyUnstake || (block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod), "Lock period not reached");
 
         uint256 rewardAmount = getUserRewards(msg.sender);
         stakingToken.transfer(msg.sender, stakeInfo.stakingAmount);
@@ -252,6 +256,14 @@ contract StakeLP is Ownable, ERC721Holder, ReentrancyGuard {
      */
     function updateMultiplierIncrementLockPeriod(uint256 increment) external onlyOwner {
         multiplierIncrementLockPeriod = increment;
+    }
+    
+    /**
+     * @dev Updates the emergencyUnstake
+     * @param _emergencyUnstake "true" is in case of attack (in emergency mode users can unstake even if lock period not met), "false" is in normal conditions
+     */
+    function updateEmergencyUnstake(bool _emergencyUnstake) external onlyOwner {
+        emergencyUnstake = _emergencyUnstake;
     }
 
     /**
