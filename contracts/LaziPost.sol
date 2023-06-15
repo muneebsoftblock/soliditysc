@@ -5,6 +5,8 @@
 //
 pragma solidity 0.8.14;
 
+import "./LaziPostFactory.sol";
+
 // For Remix
 // import "erc721a@3.3.0/contracts/ERC721A.sol";
 // import "erc721a@3.3.0/contracts/extensions/ERC721AQueryable.sol";
@@ -31,7 +33,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
     uint256 public laziPostPrice = 0.016 * 1e18; // $5 / 0.016 BNB
     uint256 public saleActiveTime = type(uint256).max;
 
-    address public mintSigner = msg.sender;
+    LaziPostFactory public factory = LaziPostFactory(msg.sender);
 
     string laziPostImages;
 
@@ -57,9 +59,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         tokenPrice[tokenId] = laziPostPrice;
     }
 
-    function set_mintSigner(address _mintSigner) public onlyOwner {
-        mintSigner = _mintSigner;
-    }
+   
 
     // Airdrop LaziPost
     function airdrop(address[] calldata _addresses, string[] calldata _laziPosts) external onlyOwner {
@@ -109,7 +109,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         require(_signature.length == 65, "Invalid signature length");
         address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == mintSigner, "Invalid signature");
+        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
         _signatureUsed[_signature] = true;
         uint256 startId = totalSupply() + _startTokenId();
         for (uint256 i = 0; i < _laziNames.length; i++) {
@@ -131,7 +131,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
 
         require(_signature.length == 65, "Invalid signature length");
         address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == mintSigner, "Invalid signature");
+        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
         _signatureUsed[_signature] = true;
 
         uint256 startId = totalSupply() + _startTokenId();
@@ -188,7 +188,7 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         require(_signatureUsed[_signature] == false, "Signature is Already Used");
         require(_signature.length == 65, "Invalid signature length");
         address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == mintSigner, "Invalid signature");
+        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
         _signatureUsed[_signature] = true;
 
         address seller = listing.seller;

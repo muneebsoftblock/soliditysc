@@ -2,18 +2,16 @@
 pragma solidity 0.8.14;
 
 import "./LaziPost.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LaziPostFactory {
-    address public factoryOwner; // New state variable to store the owner address
+contract LaziPostFactory is Ownable {
     address[] public deployedLaziPosts;
     event LaziPostCreated(address postAddress);
 
-    constructor() {
-        factoryOwner = msg.sender; // Set the contract deployer as the initial owner
-    }
+    address public laziPostMintSigner = msg.sender;
 
-    function getFactoryOwner() public view returns (address) {
-        return factoryOwner;
+    function set_laziPostMintSigner(address _laziPostMintSigner) public onlyOwner {
+        laziPostMintSigner = _laziPostMintSigner;
     }
 
     function getDeployedLaziPostsCount() public view returns (uint256) {
@@ -29,11 +27,6 @@ contract LaziPostFactory {
         newLaziPost.transferOwnership(msg.sender);
 
         return address(newLaziPost);
-    }
-
-    function transferOwnership(address newOwner) public {
-        require(newOwner != address(0), "Invalid new owner");
-        transferOwnership(newOwner);
     }
 
     function getDeployedLaziPosts() public view returns (address[] memory) {
