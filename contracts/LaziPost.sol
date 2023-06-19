@@ -17,31 +17,16 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2981 {
-    struct NftListing {
-        uint256 tokenId;
-        address seller;
-        uint256 price;
-        bool active;
-    }
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-    mapping(string => bool) public isMinted;
-    mapping(uint256 => string) public domainNameOf;
-    mapping(bytes => bool) public _signatureUsed;
+contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ReentrancyGuard, ERC2981 {
+    using ECDSA for bytes32;
 
-    uint256 public laziPostPrice = 0.016 * 1e18; // $5 / 0.016 BNB
-    uint256 public saleActiveTime = type(uint256).max;
-
+    mapping(bytes => bool) public signatureUsed;
+    mapping(address => bool) private allowedSpender;
     LaziPostFactory public factory = LaziPostFactory(msg.sender);
-
-    string laziPostImages;
-
-    // LaziPost Auto Approves Marketplaces
-    mapping(address => bool) private allowed;
-
-    mapping(uint256 => NftListing) public nftListings;
-    mapping(uint256 => uint256) public tokenPrice;
 
     // these lines are called only once when the contract is deployed
     constructor() {
@@ -52,178 +37,44 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         autoApproveMarketplace(0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e); // LooksRare
     }
 
-    function registerName(string calldata _laziPost, uint256 tokenId) internal {
-        require(!isMinted[_laziPost], "Nft Domain Already Minted");
-        isMinted[_laziPost] = true;
-        domainNameOf[tokenId] = _laziPost;
-        tokenPrice[tokenId] = laziPostPrice;
-    }
-
-   
-
     // Airdrop LaziPost
-    function airdrop(address[] calldata _addresses, string[] calldata _laziPosts) external onlyOwner {
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziPosts.length; i++) {
-            registerName(_laziPosts[i], startId + i);
-        }
-        for (uint256 i = 0; i < _laziPosts.length; i++) {
-            _safeMint(_addresses[i], 1);
+    function airdrop(address[] calldata _addresses, uint256[] calldata _counts) external onlyOwner {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            _mint(_addresses[i], _counts[i]);
         }
     }
 
-    function airdrop(address _address, string[] calldata _laziPosts) external onlyOwner {
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziPosts.length; i++) {
-            registerName(_laziPosts[i], startId + i);
-        }
-
-        _safeMint(_address, _laziPosts.length);
-    }
-
-    function listNftForSale(uint256 tokenId, uint256 price) external {
-        require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
-        tokenPrice[tokenId] = price;
-        nftListings[tokenId] = NftListing(tokenId, msg.sender, price, true);
-    }
-
-    function getTokenPrice(uint256 tokenId) external view returns (uint256) {
-        return tokenPrice[tokenId];
-    }
-
-    function mintLaziPost(string[] calldata _laziNames) external payable saleActive(saleActiveTime) {
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziNames.length; i++) {
-            registerName(_laziNames[i], startId + i);
-        }
-        _safeMint(msg.sender, _laziNames.length);
-    }
-
-    function mintLaziPostSigned(
-        string[] calldata _laziNames,
-        uint256 _laziPostPrice,
-        bytes32 _signedMessageHash,
+    function buyNftSigned(
+        uint256 _tokenId,
+        address _seller,
+        uint256 _price,
+        uint256 _timestamp,
         bytes memory _signature
-    ) external payable saleActive(saleActiveTime) {
-        require(msg.value == _laziPostPrice, "Hey hey, send the right amount of ETH");
-        require(_signatureUsed[_signature] == false, "Signature is Already Used");
-        require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
-        _signatureUsed[_signature] = true;
-        uint256 startId = totalSupply() + _startTokenId();
-        for (uint256 i = 0; i < _laziNames.length; i++) {
-            registerName(_laziNames[i], startId + i);
+    ) external payable nonReentrant {
+        // verify that correct data came from API
+        bytes32 message = keccak256(abi.encodePacked(_seller, _price, _timestamp));
+        require(factory.API_ADDRESS() == message.toEthSignedMessageHash().recover(_signature), "Invalid Signature");
+        require(signatureUsed[_signature] == false, "Signature is already used");
+        signatureUsed[_signature] = true;
+
+        // Remaining conditions
+        require(msg.value == _price, "Incorrect payment amount");
+        require(_seller != msg.sender, "Seller and buyer must be different");
+
+        // Transfer the price to the seller
+        uint royaltyAmount = (_price * factory.royalty()) / 1.00 ether;
+        if (royaltyAmount > 0) {
+            (bool successRoyalty, ) = payable(factory.owner()).call{value: royaltyAmount}("");
+            require(successRoyalty);
         }
-        _safeMint(msg.sender, _laziNames.length);
-    }
+        (bool successPayment, ) = payable(_seller).call{value: _price - royaltyAmount}("");
+        require(successPayment);
 
-    // This function will be removed
-    function buyLaziPostsSigned(
-        string calldata _laziPost,
-        uint256 _laziPostPrice,
-        bytes32 _signedMessageHash,
-        bytes memory _signature
-    ) external payable saleActive(saleActiveTime) {
-        require(msg.value == _laziPostPrice, "Hey hey, send the right amount of ETH");
-
-        require(_signatureUsed[_signature] == false, "Signature is Already Used");
-
-        require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
-        _signatureUsed[_signature] = true;
-
-        uint256 startId = totalSupply() + _startTokenId();
-        registerName(_laziPost, startId);
-        _safeMint(msg.sender, 1);
-    }
-
-    function messageHash(string memory _message) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _message));
-    }
-
-    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32) {
-        /*
-        Signature is produced by signing a keccak256 hash with the following format:
-        "\x19Ethereum Signed Message\n" + len(msg) + msg
-        */
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
-    }
-
-    // verifySignature helper function
-    function verifySignature(bytes32 _signedMessageHash, bytes memory _signature) public pure returns (address) {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // Check the signature length
-        require(_signature.length == 65, "Invalid signature length");
-
-        // Divide the signature into its three components
-        assembly {
-            r := mload(add(_signature, 32))
-            s := mload(add(_signature, 64))
-            v := and(mload(add(_signature, 65)), 255)
-        }
-
-        // Ensure the validity of v
-        // Ensure the validity of v
-        if (v < 27) {
-            v += 27;
-        }
-        require(v == 27 || v == 28, "Invalid signature v value");
-
-        // Recover the signer's address
-        address signer = ecrecover(_signedMessageHash, v, r, s);
-        require(signer != address(0), "Invalid signature");
-
-        return signer;
-    }
-
-    function buyNftSigned(uint256 tokenId, bytes32 _signedMessageHash, bytes memory _signature) external payable {
-        NftListing storage listing = nftListings[tokenId];
-        require(listing.active, "NFT is not listed for sale");
-        require(msg.value >= listing.price, "Insufficient payment");
-        require(_signatureUsed[_signature] == false, "Signature is Already Used");
-        require(_signature.length == 65, "Invalid signature length");
-        address recoveredMintSigner = verifySignature(_signedMessageHash, _signature);
-        require(recoveredMintSigner == factory.laziPostMintSigner(), "Invalid signature");
-        _signatureUsed[_signature] = true;
-
-        address seller = listing.seller;
+        // Transfer the product to the buyer
         address buyer = msg.sender;
-        uint256 price = listing.price;
 
-        // Transfer the NFT from the seller to the buyer
-        // _transfer(seller, buyer, tokenId);
-        safeTransferFrom(seller, buyer, tokenId);
-
-        // Transfer the payment to the seller
-        Address.sendValue(payable(seller), price);
-
-        // Deactivate the listing
-        delete nftListings[tokenId];
-    }
-
-    function buyNft(uint256 tokenId) external payable {
-        NftListing storage listing = nftListings[tokenId];
-        require(listing.active, "NFT is not listed for sale");
-        require(msg.value >= listing.price, "Insufficient payment");
-
-        address seller = listing.seller;
-        address buyer = msg.sender;
-        uint256 price = listing.price;
-
-        // Transfer the NFT from the seller to the buyer
-        // _transfer(seller, buyer, tokenId);
-        safeTransferFrom(seller, buyer, tokenId);
-
-        // Transfer the payment to the seller
-        Address.sendValue(payable(seller), price);
-
-        // Deactivate the listing
-        delete nftListings[tokenId];
+        if (_exists(_tokenId)) safeTransferFrom(_seller, buyer, _tokenId);
+        else _mint(buyer, 1);
     }
 
     // onlyOwner functions
@@ -232,47 +83,29 @@ contract LaziPost is ERC721A("Lazi Post", "LP"), Ownable, ERC721AQueryable, ERC2
         require(success);
     }
 
-    function set_laziPostPrice(uint256 _laziPostPrice) external onlyOwner {
-        laziPostPrice = _laziPostPrice;
-    }
-
-    function set_saleActiveTime(uint256 _saleActiveTime) external onlyOwner {
-        saleActiveTime = _saleActiveTime;
-    }
-
-    function set_laziPostImages(string calldata _laziPostImages) external onlyOwner {
-        laziPostImages = _laziPostImages;
-    }
-
-    function set_royalty(address _receiver, uint96 _feeNumerator) external onlyOwner {
+    function set_royaltyOpenSea(address _receiver, uint96 _feeNumerator) external onlyOwner {
         _setDefaultRoyalty(_receiver, _feeNumerator);
-    }
-
-    // Helper Modifiers
-    modifier saleActive(uint256 _saleActiveTime) {
-        require(block.timestamp > _saleActiveTime, "Nope, sale is not open");
-        _;
     }
 
     // System Related
     function _baseURI() internal view override returns (string memory) {
-        return laziPostImages;
+        return string(abi.encodePacked(factory.laziPostImages(), abi.encodePacked(address(this)), "/"));
     }
 
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC721A, ERC721A, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
     function autoApproveMarketplace(address _spender) public onlyOwner {
-        allowed[_spender] = !allowed[_spender];
+        allowedSpender[_spender] = !allowedSpender[_spender];
     }
 
-    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
-        if (allowed[_operator]) return true; // Opensea or any other Marketplace
+    function isApprovedForAll(address _owner, address _operator) public view override(IERC721A, ERC721A) returns (bool) {
+        if (allowedSpender[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
 }
