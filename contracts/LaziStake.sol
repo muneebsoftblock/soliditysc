@@ -51,7 +51,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public MIN_LOCK_DURATION = 7 days; // The minimum lock duration in seconds.
     uint256 public MAX_LOCK_DURATION = 365 days; // The maximum lock duration in seconds.
 
-    bool public emergencyUnstake = true; // in case of short selling attack, project owner will allow users to unstake LP tokens even if lock period is not met
+    bool public emergencyUnstake = false; // in case of short selling attack, project owner will allow users to unstake LP tokens even if lock period is not met
 
     constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
