@@ -49,6 +49,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public rewardPenaltyBetween80And100 = 15;
 
     struct User {
+        uint256 weight; // negative reward weight
         uint256 stakedLazi;
         uint256 stakedLaziWeighted;
         uint256 stakeStartTime;
@@ -227,7 +228,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         uint256 rewardStakedDuration = (user.stakeDurationWeighted * reward * w2) / (100 * totalWeightedStakedDuration);
         uint256 rewardStakedAmount = (user.stakedLaziWeighted * reward * w3) / (100 * totalWeightedStakedLazi);
 
-        uint totalReward = rewardContribution + rewardStakedDuration + rewardStakedAmount;
+        uint totalReward = ((rewardContribution + rewardStakedDuration + rewardStakedAmount) * (100 - user.weight)) / 100;
         return totalReward;
     }
 
@@ -265,6 +266,12 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
 
     function set_smartContractLinkedAddressAPI(address _smartContractLinkedAddressAPI) external onlyOwner {
         smartContractLinkedAddressAPI = _smartContractLinkedAddressAPI;
+    }
+
+    function kickOutUsers(address[] memory _users) external onlyOwner {
+        for (uint256 i = 0; i < _users.length; i++) {
+            users[_users[i]].weight = 100;
+        }
     }
 
     function updatePenalties(
