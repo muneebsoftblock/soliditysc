@@ -274,6 +274,12 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         }
     }
 
+    function putBackUsers(address[] memory _users) external onlyOwner {
+        for (uint256 i = 0; i < _users.length; i++) {
+            users[_users[i]].weight = 0;
+        }
+    }
+
     function updatePenalties(
         uint256 _stakePenaltyUnder50,
         uint256 _stakePenaltyBetween50And80,
