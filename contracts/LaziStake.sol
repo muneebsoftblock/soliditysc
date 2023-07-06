@@ -53,6 +53,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
     bool public emergencyUnstake = false; // in case of short selling attack, project owner will allow users to unstake LP tokens even if lock period is not met
 
+    mapping(address => uint256) lastCompoundTime;
+
     constructor(IERC20 _stakingToken, LAZI _rewardToken, IERC721 _erc721) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
@@ -91,7 +93,6 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     function unstake() external nonReentrant {
         StakeInfo storage stakeInfo = stakes[msg.sender];
         require(stakeInfo.stakingAmount > 0, "No stake found");
-
 
         require(emergencyUnstake || (block.timestamp >= stakeInfo.stakeStartTime + stakeInfo.lockPeriod), "Lock period not reached");
 
@@ -257,7 +258,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     function updateMultiplierIncrementLockPeriod(uint256 increment) external onlyOwner {
         multiplierIncrementLockPeriod = increment;
     }
-    
+
     /**
      * @dev Updates the emergencyUnstake
      * @param _emergencyUnstake "true" is in case of attack (in emergency mode users can unstake even if lock period not met), "false" is in normal conditions
@@ -289,5 +290,44 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
             stakedTokenDistributions[i] = stakedTokensDistribution[time]; // Get staked token distribution for the specified time
             rewardTokenDistributions[i] = rewardTokensDistribution[time]; // Get reward token distribution for the specified time
         }
+    }
+
+    /**
+     * @dev Compounds the earned rewards for the caller without performing a transaction.
+     * Rewards are automatically compounded every 3 minutes based on the time since the last compound.
+     * @notice Users can compound their rewards to increase their staked amount.
+     * @notice This function does not require a separate transaction.
+     * @notice The rewards are calculated and added to the staked amount, increasing the total staked amount and total weighted stake.
+     */
+
+    function compoundRewards() internal {
+        StakeInfo storage stakeInfo = stakes[msg.sender];
+        uint256 rewardAmount = getUserRewards(msg.sender);
+        require(rewardAmount > 0, "No rewards to compound");
+
+        uint256 compoundPeriod = 3 minutes;
+        uint256 lastCompound = lastCompoundTime[msg.sender];
+        uint256 currentTime = block.timestamp;
+        uint256 compoundableRewards = 0;
+
+        // Calculate the rewards earned during each compound period
+        for (uint256 time = lastCompound + compoundPeriod; time <= currentTime; time += compoundPeriod) {
+            uint256 periodRewards = ((stakeInfo.weightedStake * compoundPeriod * REWARD_PER_SEC) / totalWeightedStake);
+            compoundableRewards += periodRewards;
+        }
+
+        // Update the user's staked amount with the compounded rewards
+        stakeInfo.stakingAmount += compoundableRewards;
+
+        // Update the last compound time for the user
+        lastCompoundTime[msg.sender] = currentTime;
+
+        // Update the total staked amount and total weighted stake
+        totalStaked += compoundableRewards;
+        totalWeightedStake += compoundableRewards;
+
+        // Add the compounded rewards to the reward tokens distribution
+        rewardTokensDistribution[stakeInfo.lockPeriod] += compoundableRewards;
+        txDistribution[stakeInfo.lockPeriod]++;
     }
 }
