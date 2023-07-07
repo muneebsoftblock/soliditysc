@@ -36,8 +36,8 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     LAZI public rewardToken; // The reward token.
     IERC721 public erc721; // The ERC721 token used for staking.
 
-    uint256 public multiplierBaseErc721 = 1 * 1e18;
-    uint256 public multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
+    uint256 public multiplierBaseErc721 = 2.5 * 1e18;
+    uint256 public multiplierIncrementErc721 = 0.5 * 1e18; // The increment value for the ERC721 multiplier.
 
     uint256 public multiplierBaseLockPeriod = 1 * 1e18;
     uint256 public multiplierIncrementLockPeriod = 0.00000066 * 1e18; // The increment value for the lock period multiplier.
@@ -75,7 +75,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
 
         uint256 lockPeriodMultiplier = multiplierBaseLockPeriod + (lockPeriod * multiplierIncrementLockPeriod);
 
-        uint256 erc721Multiplier = multiplierBaseErc721 + (erc721Tokens * multiplierIncrementErc721);
+        uint256 erc721Multiplier = erc721Tokens == 0 ? 1e18 : multiplierBaseErc721 + (erc721Tokens * multiplierIncrementErc721);
 
         return (lockPeriodMultiplier * erc721Multiplier) / 1e18;
     }
