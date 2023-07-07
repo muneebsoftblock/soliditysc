@@ -36,8 +36,11 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     LAZI public rewardToken; // The reward token.
     IERC721 public erc721; // The ERC721 token used for staking.
 
-    uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
-    uint256 private multiplierIncrementLockPeriod = 0.00000066 * 1e18; // The increment value for the lock period multiplier.
+    uint256 public multiplierBaseErc721 = 1 * 1e18;
+    uint256 public multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
+
+    uint256 public multiplierBaseLockPeriod = 1 * 1e18;
+    uint256 public multiplierIncrementLockPeriod = 0.00000066 * 1e18; // The increment value for the lock period multiplier.
 
     uint256 public totalStaked; // The total amount of tokens staked.
     uint256 public totalWeightedStake; // The total weighted stake.
@@ -47,7 +50,7 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     mapping(uint256 => uint256) private rewardTokensDistribution; // Mapping of lock periods to the total amount of reward tokens.
 
     uint256 public REWARD_STOP_TIME = block.timestamp + 4 * 365 days; // The stop time for reward distribution.
-    uint256 public REWARD_PER_SEC = 1.5856 * 1e18; // The amount of reward tokens distributed per second.
+    uint256 public REWARD_PER_SEC = 0.5787 * 1e18; // The amount of reward tokens distributed per second.
     uint256 public MIN_LOCK_DURATION = 7 days; // The minimum lock duration in seconds.
     uint256 public MAX_LOCK_DURATION = 365 days; // The maximum lock duration in seconds.
 
@@ -70,9 +73,9 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
     function _getMultiplier(uint256 erc721Tokens, uint256 lockPeriod) private view returns (uint256) {
         if (lockPeriod == 0) return 1 * 1e18;
 
-        uint256 lockPeriodMultiplier = 1 * 1e18 + lockPeriod * multiplierIncrementLockPeriod;
+        uint256 lockPeriodMultiplier = multiplierBaseLockPeriod + (lockPeriod * multiplierIncrementLockPeriod);
 
-        uint256 erc721Multiplier = 1 * 1e18 + erc721Tokens * multiplierIncrementErc721;
+        uint256 erc721Multiplier = multiplierBaseErc721 + (erc721Tokens * multiplierIncrementErc721);
 
         return (lockPeriodMultiplier * erc721Multiplier) / 1e18;
     }
@@ -265,6 +268,14 @@ contract StakeLaziThings is Ownable, ERC721Holder, ReentrancyGuard {
      */
     function updateEmergencyUnstake(bool _emergencyUnstake) external onlyOwner {
         emergencyUnstake = _emergencyUnstake;
+    }
+
+    function updateMultiplierBaseLockPeriod(uint256 _multiplierBaseLockPeriod) external onlyOwner {
+        multiplierBaseLockPeriod = _multiplierBaseLockPeriod;
+    }
+
+    function updateMultiplierBaseErc721(uint256 _multiplierBaseErc721) external onlyOwner {
+        multiplierBaseErc721 = _multiplierBaseErc721;
     }
 
     /**

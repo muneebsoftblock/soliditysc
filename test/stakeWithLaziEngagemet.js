@@ -221,6 +221,8 @@ contract("Staking", (accounts) => {
         // await staking.harvest({ from: userA })
         // await staking.harvest({ from: userB })
 
+        await staking.kickOutUsers([userB])
+
         // Check rewards
         const userARewards = await staking.getUserRewards(userA, "50", "100")
         const userBRewards = await staking.getUserRewards(userB, "50", "100")
@@ -230,9 +232,10 @@ contract("Staking", (accounts) => {
         console.log("User B rewards:", fromWei(userBRewards.toString()))
         console.log("Total rewards:", fromWei(totalRewards.toString()))
 
-        expect(totalRewards).to.be.bignumber.greaterThan(ether("136000"))
-        expect(totalRewards).to.be.bignumber.lessThan(ether("137010"))
-        // assert(totalRewards.toString().includes("137000"), "Total rewards should be 137,000 tokens")
+        expect(totalRewards).to.be.bignumber.greaterThan(ether("59874"))
+        expect(totalRewards).to.be.bignumber.lessThan(ether("59875"))
+        // expect(totalRewards).to.be.bignumber.greaterThan(ether("136000"))
+        // expect(totalRewards).to.be.bignumber.lessThan(ether("137010"))
     })
 
     it("should apply penalties correctly", async () => {

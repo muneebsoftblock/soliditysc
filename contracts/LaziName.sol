@@ -142,7 +142,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         return 1;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, IERC165, ERC2981) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, IERC721A, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -150,7 +150,7 @@ contract LaziName is ERC721A("Lazi Name Service", "LNS"), Ownable, ERC721AQuerya
         allowed[_spender] = !allowed[_spender];
     }
 
-    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721) returns (bool) {
+    function isApprovedForAll(address _owner, address _operator) public view override(ERC721A, IERC721A) returns (bool) {
         if (allowed[_operator]) return true; // Opensea or any other Marketplace
         return super.isApprovedForAll(_owner, _operator);
     }
