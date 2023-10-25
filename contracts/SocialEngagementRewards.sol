@@ -38,7 +38,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     uint256 public maxEngagementDays = 2000 days;
 
     uint256 private multiplierIncrementErc721 = 0.4 * 1e18; // The increment value for the ERC721 multiplier.
-
+    uint256 public multiplierBaseErc721 = 2.5 * 1e18;
     // Define penalty variables
     uint256 public stakePenaltyUnder50 = 30;
     uint256 public stakePenaltyBetween50And80 = 15;
@@ -199,7 +199,7 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
     function getMultiplier(uint stakedLazi, uint stakeDuration, uint numErc721TokenIds) internal view returns (uint256) {
         uint256 S = totalWeightedStakedLazi == 0 ? 1e18 : (stakedLazi * 1e18) / totalWeightedStakedLazi;
         uint256 T = totalWeightedStakedDuration == 0 ? 1e18 : (stakeDuration * 1e18) / totalWeightedStakedDuration;
-        uint256 U = 1 * 1e18 + numErc721TokenIds * multiplierIncrementErc721;
+        uint256 U = multiplierBaseErc721 + numErc721TokenIds * multiplierIncrementErc721;
 
         if (S < 1e18) S = 1e18;
         if (T < 1e18) T = 1e18;
@@ -278,6 +278,10 @@ contract LaziEngagementRewards is Ownable, ERC721Holder, ReentrancyGuard {
         for (uint256 i = 0; i < _users.length; i++) {
             users[_users[i]].weight = 0;
         }
+    }
+    
+    function updateMultiplierBaseErc721(uint256 _multiplierBaseErc721) external onlyOwner {
+        multiplierBaseErc721 = _multiplierBaseErc721;
     }
 
     function updatePenalties(
