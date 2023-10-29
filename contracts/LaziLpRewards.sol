@@ -191,6 +191,7 @@ contract StakeLP is Ownable, ERC721Holder, ReentrancyGuard {
         // Perform calculations based on the lock period
         if (lockPeriod == 0) {
             // Add assets to the same lock period
+            if (stakeInfo.stakeStartTime == 0) stakeInfo.stakeStartTime = block.timestamp; // Set the stake start time to the current block timestamp
             uint256 multiplier = _getMultiplier(erc721TokenIds.length, lockPeriod); // Calculate the multiplier based on the number of ERC721 tokens and the lock period
             uint256 weightedStake = (erc20Amount * multiplier) / 1e18; // Calculate the weighted stake by multiplying the ERC20 amount with the multiplier and dividing by 1e18
             stakeInfo.weightedStake += weightedStake; // Update the weighted stake for the user in the stakeInfo storage
